@@ -1,0 +1,66 @@
+name: socket_file_transfer
+description: Cross-computer file transfer application using Dart and Flutter
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # UI and styling
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_animate: ^4.2.0+1
+  glassmorphism: ^3.0.0
+  
+  # Networking
+  socket_io_client: ^2.0.3+1
+  http: ^1.1.0
+  
+  # File handling
+  file_picker: ^6.1.1
+  path_provider: ^2.1.1
+  permission_handler: ^11.0.1
+  
+  # State management
+  provider: ^6.1.1
+  
+  # Utilities
+  crypto: ^3.0.3
+  intl: ^0.18.1
+  shared_preferences: ^2.2.2
+  
+  # Charts and visualization
+  fl_chart: ^0.65.0
+  percent_indicator: ^4.2.3
+  
+  # Device info
+  device_info_plus: ^9.1.1
+  network_info_plus: ^4.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+  
+  # fonts:
+  #   - family: SFProDisplay
+  #     fonts:
+  #       - asset: assets/fonts/SFProDisplay-Regular.ttf
+  #       - asset: assets/fonts/SFProDisplay-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/SFProDisplay-Semibold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/SFProDisplay-Bold.ttf
+  #         weight: 700

@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Topology Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        #canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            min-width: 300px;
+        }
+        
+        .stats-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            min-width: 250px;
+        }
+        
+        .legend-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            z-index: 1000;
+        }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn.active {
+            background: rgba(34, 197, 94, 0.5);
+            border-color: rgba(34, 197, 94, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <div class="control-panel">
+            <h3 class="text-xl font-bold mb-4">🌐 Network Controls</h3>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Network Type</label>
+                <button class="btn active" onclick="setNetworkType('lan')">LAN</button>
+                <button class="btn" onclick="setNetworkType('wan')">WAN</button>
+                <button class="btn" onclick="setNetworkType('mesh')">Mesh</button>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Simulation</label>
+                <button class="btn" onclick="startTransfer()">📤 Start Transfer</button>
+                <button class="btn" onclick="addNode()">➕ Add Node</button>
+                <button class="btn" onclick="removeNode()">➖ Remove Node</button>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Visualization</label>
+                <button class="btn" onclick="toggleAnimation()">⏯️ Toggle Animation</button>
+                <button class="btn" onclick="resetNetwork()">🔄 Reset</button>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Speed</label>
+                <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1" 
+                       onchange="setSpeed(this.value)" class="w-full">
+                <div class="text-xs opacity-75">Speed: <span id="speedValue">1x</span></div>
+            </div>
+        </div>
+        
+        <div class="stats-panel">
+            <h3 class="text-xl font-bold mb-4">📊 Network Stats</h3>
+            <div class="space-y-2 text-sm">
+                <div>🖥️ Nodes: <span id="nodeCount">0</span></div>
+                <div>🔗 Connections: <span id="connectionCount">0</span></div>
+                <div>📤 Active Transfers: <span id="transferCount">0</span></div>
+                <div>📊 Total Data: <span id="totalData">0 MB</span></div>
+                <div>⚡ Avg Speed: <span id="avgSpeed">0 Mbps</span></div>
+                <div>🌐 Network Type: <span id="networkTypeDisplay">LAN</span></div>
+                <div>⏱️ Uptime: <span id="uptime">0s</span></div>
+            </div>
+        </div>
+        
+        <div class="legend-panel">
+            <h4 class="font-bold mb-2">Legend</h4>
+            <div class="space-y-1 text-xs">
+                <div>🔵 Student A (Sender)</div>
+                <div>🔴 Student B (Receiver)</div>
+                <div>🟢 Active Node</div>
+                <div>🟡 Router/Switch</div>
+                <div>⚡ Data Transfer</div>
+                <div>📡 Server</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Network visualization variables
+        let nodes = [];
+        let connections = [];
+        let transfers = [];
+        let particles = [];
+        let networkType = 'lan';
+        let animationSpeed = 1;
+        let isAnimating = true;
+        let startTime = Date.now();
+        let totalDataTransferred = 0;
+        
+        // Node class
+        class Node {
+            constructor(x, y, type, label) {
+                this.x = x;
+                this.y = y;
+                this.type = type; // 'student', 'server', 'router'
+                this.label = label;
+                this.radius = type === 'server' ? 30 : type === 'router' ? 20 : 15;
+                this.color = this.getColor();
+                this.pulsePhase = random(TWO_PI);
+                this.connections = [];
+                this.isTransferring = false;
+                this.transferProgress = 0;
+            }
+            
+            getColor() {
+                switch(this.type) {
+                    case 'student_a': return color(59, 130, 246); // Blue
+                    case 'student_b': return color(239, 68, 68);  // Red
+                    case 'server': return color(34, 197, 94);    // Green
+                    case 'router': return color(250, 204, 21);  // Yellow
+                    default: return color(156, 163, 175);      // Gray
+                }
+            }
+            
+            update() {
+                if (isAnimating) {
+                    this.pulsePhase += 0.05 * animationSpeed;
+                }
+                
+                if (this.isTransferring) {
+                    this.transferProgress = min(this.transferProgress + 0.02 * animationSpeed, 1);
+                    if (this.transferProgress >= 1) {
+                        this.isTransferring = false;
+                        this.transferProgress = 0;
+                    }
+                }
+            }
+            
+            draw() {
+                push();
+                translate(this.x, this.y);
+                
+                // Pulse effect for active nodes
+                if (this.isTransferring || this.type === 'server') {
+                    let pulseSize = sin(this.pulsePhase) * 5 + this.radius;
+                    noFill();
+                    stroke(255, 100);
+                    strokeWeight(2);
+                    circle(0, 0, pulseSize * 2);
+                }
+                
+                // Main node
+                fill(this.color);
+                noStroke();
+                circle(0, 0, this.radius * 2);
+                
+                // Icon/Label
+                fill(255);
+                textAlign(CENTER, CENTER);
+                textSize(10);
+                text(this.label, 0, 0);
+                
+                // Progress ring for transfers
+                if (this.isTransferring) {
+                    noFill();
+                    stroke(255, 200, 0);
+                    strokeWeight(3);
+                    arc(0, 0, this.radius * 2.5, this.radius * 2.5, 
+                        -HALF_PI, -HALF_PI + (TWO_PI * this.transferProgress));
+                }
+                
+                pop();
+            }
+        }
+        
+        // Connection class
+        class Connection {
+            constructor(node1, node2, type = 'wired') {
+                this.node1 = node1;
+                this.node2 = node2;
+                this.type = type; // 'wired', 'wireless'
+                this.strength = random(0.5, 1);
+                this.dataFlow = 0;
+            }
+            
+            update() {
+                if (this.node1.isTransferring || this.node2.isTransferring) {
+                    this.dataFlow = min(this.dataFlow + 0.1 * animationSpeed, 1);
+                } else {
+                    this.dataFlow = max(this.dataFlow - 0.05 * animationSpeed, 0);
+                }
+            }
+            
+            draw() {
+                push();
+                
+                // Connection line
+                strokeWeight(this.type === 'wireless' ? 2 : 3);
+                if (this.dataFlow > 0) {
+                    stroke(255, 200, 0, 150 + this.dataFlow * 100);
+                } else {
+                    stroke(255, 50);
+                }
+                
+                if (this.type === 'wireless') {
+                    // Dashed line for wireless
+                    drawingContext.setLineDash([5, 5]);
+                }
+                
+                line(this.node1.x, this.node1.y, this.node2.x, this.node2.y);
+                drawingContext.setLineDash([]);
+                
+                // Data flow particles
+                if (this.dataFlow > 0 && frameCount % 10 === 0) {
+                    let t = random(1);
+                    let x = lerp(this.node1.x, this.node2.x, t);
+                    let y = lerp(this.node1.y, this.node2.y, t);
+                    particles.push(new Particle(x, y));
+                }
+                
+                pop();
+            }
+        }
+        
+        // Particle class for data visualization
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = random(-1, 1);
+                this.vy = random(-1, 1);
+                this.life = 1;
+                this.size = random(2, 6);
+            }
+            
+            update() {
+                this.x += this.vx * animationSpeed;
+                this.y += this.vy * animationSpeed;
+                this.life -= 0.02 * animationSpeed;
+                this.size *= 0.98;
+            }
+            
+            draw() {
+                push();
+                fill(255, 200, 0, this.life * 255);
+                noStroke();
+                circle(this.x, this.y, this.size);
+                pop();
+            }
+        }
+        
+        // Initialize network
+        function initializeNetwork() {
+            nodes = [];
+            connections = [];
+            particles = [];
+            
+            if (networkType === 'lan') {
+                createLAN();
+            } else if (networkType === 'wan') {
+                createWAN();
+            } else if (networkType === 'mesh') {
+                createMesh();
+            }
+            
+            updateStats();
+        }
+        
+        function createLAN() {
+            let centerX = width / 2;
+            let centerY = height / 2;
+            
+            // Central router
+            let router = new Node(centerX, centerY, 'router', 'Router');
+            nodes.push(router);
+            
+            // Student A
+            let studentA = new Node(centerX - 200, centerY - 100, 'student_a', 'Student A');
+            nodes.push(studentA);
+            connections.push(new Connection(studentA, router, 'wired'));
+            
+            // Student B
+            let studentB = new Node(centerX + 200, centerY - 100, 'student_b', 'Student B');
+            nodes.push(studentB);
+            connections.push(new Connection(studentB, router, 'wired'));
+            
+            // Server
+            let server = new Node(centerX, centerY + 150, 'server', 'Server');
+            nodes.push(server);
+            connections.push(new Connection(server, router, 'wired'));
+            
+            // Additional nodes
+            for (let i = 0; i < 3; i++) {
+                let angle = (TWO_PI / 3) * i;
+                let x = centerX + cos(angle) * 250;
+                let y = centerY + sin(angle) * 250;
+                let node = new Node(x, y, 'student', `Node ${i + 1}`);
+                nodes.push(node);
+                connections.push(new Connection(node, router, 'wired'));
+            }
+        }
+        
+        function createWAN() {
+            // Create multiple clusters
+            let clusters = [
+                { x: width * 0.2, y: height * 0.3, name: 'Campus A' },
+                { x: width * 0.8, y: height * 0.3, name: 'Campus B' },
+                { x: width * 0.5, y: height * 0.7, name: 'Data Center' }
+            ];
+            
+            clusters.forEach((cluster, clusterIndex) => {
+                // Router for each cluster
+                let router = new Node(cluster.x, cluster.y, 'router', cluster.name);
+                nodes.push(router);
+                
+                // Add nodes to cluster
+                for (let i = 0; i < 3; i++) {
+                    let angle = random(TWO_PI);
+                    let distance = random(50, 120);
+                    let x = cluster.x + cos(angle) * distance;
+                    let y = cluster.y + sin(angle) * distance;
+                    let nodeType = i === 0 ? 'student_a' : i === 1 ? 'student_b' : 'student';
+                    let node = new Node(x, y, nodeType, `${cluster.name} ${i + 1}`);
+                    nodes.push(node);
+                    connections.push(new Connection(node, router, 'wired'));
+                }
+            });
+            
+            // Connect clusters
+            for (let i = 0; i < clusters.length; i++) {
+                for (let j = i + 1; j < clusters.length; j++) {
+                    let node1 = nodes[i * 4 + 1]; // Router of cluster i
+                    let node2 = nodes[j * 4 + 1]; // Router of cluster j
+                    connections.push(new Connection(node1, node2, 'wireless'));
+                }
+            }
+        }
+        
+        function createMesh() {
+            let gridSize = 4;
+            let spacing = min(width, height) / (gridSize + 1);
+            let offsetX = (width - spacing * (gridSize - 1)) / 2;
+            let offsetY = (height - spacing * (gridSize - 1)) / 2;
+            
+            // Create grid of nodes
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    let x = offsetX + j * spacing;
+                    let y = offsetY + i * spacing;
+                    let nodeType = 'student';
+                    let label = `Node ${i * gridSize + j + 1}`;
+                    
+                    if (i === 0 && j === 0) nodeType = 'student_a';
+                    if (i === gridSize - 1 && j === gridSize - 1) nodeType = 'student_b';
+                    if (i === 1 && j === 1) nodeType = 'server';
+                    
+                    let node = new Node(x, y, nodeType, label);
+                    nodes.push(node);
+                }
+            }
+            
+            // Create mesh connections
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    let distance = dist(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
+                    if (distance < spacing * 1.5) {
+                        let connectionType = random() > 0.7 ? 'wireless' : 'wired';
+                        connections.push(new Connection(nodes[i], nodes[j], connectionType));
+                    }
+                }
+            }
+        }
+        
+        // Control functions
+        function setNetworkType(type) {
+            networkType = type;
+            document.getElementById('networkTypeDisplay').textContent = type.toUpperCase();
+            
+            // Update button states
+            document.querySelectorAll('.control-panel .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            initializeNetwork();
+        }
+        
+        function startTransfer() {
+            if (nodes.length < 2) return;
+            
+            let studentA = nodes.find(n => n.type === 'student_a');
+            let studentB = nodes.find(n => n.type === 'student_b');
+            
+            if (studentA && studentB) {
+                studentA.isTransferring = true;
+                studentB.isTransferring = true;
+                
+                // Simulate data transfer
+                let transferSize = random(1, 100); // MB
+                totalDataTransferred += transferSize;
+                
+                setTimeout(() => {
+                    studentA.isTransferring = false;
+                    studentB.isTransferring = false;
+                }, 5000 / animationSpeed);
+            }
+        }
+        
+        function addNode() {
+            let x = random(50, width - 50);
+            let y = random(50, height - 50);
+            let node = new Node(x, y, 'student', `Node ${nodes.length + 1}`);
+            nodes.push(node);
+            
+            // Connect to nearest nodes
+            let nearestNodes = nodes
+                .filter(n => n !== node)
+                .sort((a, b) => dist(node.x, node.y, a.x, a.y) - dist(node.x, node.y, b.x, b.y))
+                .slice(0, 2);
+            
+            nearestNodes.forEach(nearNode => {
+                connections.push(new Connection(node, nearNode, random() > 0.5 ? 'wireless' : 'wired'));
+            });
+            
+            updateStats();
+        }
+        
+        function removeNode() {
+            if (nodes.length > 3) {
+                let removedNode = nodes.pop();
+                connections = connections.filter(c => c.node1 !== removedNode && c.node2 !== removedNode);
+                updateStats();
+            }
+        }
+        
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+        }
+        
+        function resetNetwork() {
+            totalDataTransferred = 0;
+            startTime = Date.now();
+            initializeNetwork();
+        }
+        
+        function setSpeed(speed) {
+            animationSpeed = parseFloat(speed);
+            document.getElementById('speedValue').textContent = speed + 'x';
+        }
+        
+        function updateStats() {
+            document.getElementById('nodeCount').textContent = nodes.length;
+            document.getElementById('connectionCount').textContent = connections.length;
+            document.getElementById('transferCount').textContent = nodes.filter(n => n.isTransferring).length;
+            document.getElementById('totalData').textContent = totalDataTransferred.toFixed(1) + ' MB';
+            document.getElementById('avgSpeed').textContent = (totalDataTransferred / max(1, (Date.now() - startTime) / 1000)).toFixed(2) + ' Mbps';
+            
+            let uptime = Math.floor((Date.now() - startTime) / 1000);
+            let hours = Math.floor(uptime / 3600);
+            let minutes = Math.floor((uptime % 3600) / 60);
+            let seconds = uptime % 60;
+            document.getElementById('uptime').textContent = 
+                hours > 0 ? `${hours}h ${minutes}m ${seconds}s` :
+                minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        }
+        
+        // P5.js setup
+        function setup() {
+            let canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('canvas-container');
+            initializeNetwork();
+        }
+        
+        function draw() {
+            // Gradient background
+            for (let i = 0; i <= height; i++) {
+                let inter = map(i, 0, height, 0, 1);
+                let c = lerpColor(color(102, 126, 234), color(118, 75, 162), inter);
+                stroke(c);
+                line(0, i, width, i);
+            }
+            
+            // Update and draw connections
+            connections.forEach(connection => {
+                connection.update();
+                connection.draw();
+            });
+            
+            // Update and draw nodes
+            nodes.forEach(node => {
+                node.update();
+                node.draw();
+            });
+            
+            // Update and draw particles
+            particles = particles.filter(particle => {
+                particle.update();
+                particle.draw();
+                return particle.life > 0;
+            });
+            
+            // Update stats periodically
+            if (frameCount % 30 === 0) {
+                updateStats();
+            }
+        }
+        
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            initializeNetwork();
+        }
+    </script>
+</body>
+</html>

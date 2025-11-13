@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Cross-Computer File Transfer - Web Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .network-grid {
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        
+        .transfer-progress {
+            transition: width 0.3s ease-in-out;
+        }
+        
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        
+        .status-online {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+        }
+        
+        .status-offline {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white network-grid">
+    <!-- Header -->
+    <header class="glass-effect p-6 mb-8">
+        <div class="container mx-auto">
+            <h1 class="text-4xl font-bold text-center mb-2">🌐 Cross-Computer File Transfer</h1>
+            <p class="text-center text-xl opacity-90">Socket Programming Lab 1 - Web Implementation</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 pb-8">
+        <!-- Connection Status -->
+        <div class="glass-effect rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div id="connectionStatus" class="w-4 h-4 rounded-full bg-red-500"></div>
+                    <span id="connectionText" class="font-semibold">Disconnected</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="serverInfo" class="text-sm opacity-75">Server: --</span>
+                    <span id="clientCount" class="text-sm opacity-75">Clients: 0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex space-x-2 mb-6 overflow-x-auto">
+            <button onclick="switchTab('config')" class="tab-btn px-6 py-3 rounded-lg glass-effect hover-scale font-semibold" data-tab="config">
+                ⚙️ Configuration
+            </button>
+            <button onclick="switchTab('transfer')" class="tab-btn px-6 py-3 rounded-lg glass-effect hover-scale font-semibold" data-tab="transfer">
+                📤 File Transfer
+            </button>
+            <button onclick="switchTab('clients')" class="tab-btn px-6 py-3 rounded-lg glass-effect hover-scale font-semibold" data-tab="clients">
+                👥 Connected Clients
+            </button>
+            <button onclick="switchTab('stats')" class="tab-btn px-6 py-3 rounded-lg glass-effect hover-scale font-semibold" data-tab="stats">
+                📊 Statistics
+            </button>
+            <button onclick="switchTab('network')" class="tab-btn px-6 py-3 rounded-lg glass-effect hover-scale font-semibold" data-tab="network">
+                🌍 Network Tools
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="glass-effect rounded-lg p-6">
+            <!-- Configuration Tab -->
+            <div id="config-tab" class="tab-content">
+                <h2 class="text-2xl font-bold mb-6">⚙️ Configuration</h2>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Student Information -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-semibold mb-4">👤 Student Information</h3>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Student ID</label>
+                            <input type="text" id="studentId" value="LS2025001" 
+                                   class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-white/40 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Display Name</label>
+                            <input type="text" id="displayName" value="Student A" 
+                                   class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-white/40 focus:outline-none">
+                        </div>
+                        <button onclick="registerClient()" 
+                                class="w-full px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold hover-scale">
+                            🚀 Connect to Server
+                        </button>
+                    </div>
+                    
+                    <!-- Server Configuration -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-semibold mb-4">🌐 Server Configuration</h3>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Server Address</label>
+                            <input type="text" id="serverAddress" value="localhost:3000" 
+                                   class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-white/40 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Local IP</label>
+                            <div id="localIp" class="px-4 py-2 rounded-lg bg-white/10 border border-white/20">
+                                Detecting...
+                            </div>
+                        </div>
+                        <button onclick="detectLocalIP()" 
+                                class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold hover-scale">
+                            🔍 Detect Local IP
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="mt-8 p-4 bg-white/5 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-4">🚀 Quick Actions</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <button onclick="createTestFile()" 
+                                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg hover-scale">
+                            📄 Create Test File
+                        </button>
+                        <button onclick="openFileManager()" 
+                                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg hover-scale">
+                            📁 File Manager
+                        </button>
+                        <button onclick="testConnection()" 
+                                class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg hover-scale">
+                            🔧 Test Connection
+                        </button>
+                        <button onclick="exportLogs()" 
+                                class="px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg hover-scale">
+                            📊 Export Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Transfer Tab -->
+            <div id="transfer-tab" class="tab-content hidden">
+                <h2 class="text-2xl font-bold mb-6">📤 File Transfer</h2>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Send File -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-semibold mb-4">📤 Send File</h3>
+                        
+                        <div class="border-2 border-dashed border-white/30 rounded-lg p-8 text-center">
+                            <input type="file" id="fileInput" class="hidden" onchange="handleFileSelect(event)">
+                            <label for="fileInput" class="cursor-pointer">
+                                <div class="text-6xl mb-4">📁</div>
+                                <p class="text-lg font-semibold">Click to select file</p>
+                                <p class="text-sm opacity-75">or drag and drop</p>
+                            </label>
+                        </div>
+                        
+                        <div id="fileInfo" class="hidden p-4 bg-white/10 rounded-lg">
+                            <h4 class="font-semibold mb-2">Selected File:</h4>
+                            <p id="fileName" class="text-sm"></p>
+                            <p id="fileSize" class="text-sm"></p>
+                            <p id="fileType" class="text-sm"></p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Select Target Client</label>
+                            <select id="targetClient" class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:border-white/40 focus:outline-none">
+                                <option value="">No clients available</option>
+                            </select>
+                        </div>
+                        
+                        <button onclick="sendFile()" id="sendBtn" disabled
+                                class="w-full px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-semibold hover-scale">
+                            📤 Send File
+                        </button>
+                        
+                        <!-- Transfer Progress -->
+                        <div id="sendProgress" class="hidden">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm">Transfer Progress</span>
+                                <span id="sendProgressText" class="text-sm">0%</span>
+                            </div>
+                            <div class="w-full bg-white/20 rounded-full h-3">
+                                <div id="sendProgressBar" class="bg-green-500 h-3 rounded-full transfer-progress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Receive File -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-semibold mb-4">📥 Receive Files</h3>
+                        
+                        <div class="p-6 bg-white/10 rounded-lg">
+                            <h4 class="font-semibold mb-4">📋 Incoming Transfers</h4>
+                            <div id="incomingTransfers" class="space-y-2">
+                                <p class="text-sm opacity-75">No incoming transfers...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 bg-white/10 rounded-lg">
+                            <h4 class="font-semibold mb-4">📁 Received Files</h4>
+                            <div id="receivedFiles" class="space-y-2 max-h-64 overflow-y-auto">
+                                <p class="text-sm opacity-75">No files received yet...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Receive Progress -->
+                        <div id="receiveProgress" class="hidden">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm">Receiving Progress</span>
+                                <span id="receiveProgressText" class="text-sm">0%</span>
+                            </div>
+                            <div class="w-full bg-white/20 rounded-full h-3">
+                                <div id="receiveProgressBar" class="bg-blue-500 h-3 rounded-full transfer-progress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connected Clients Tab -->
+            <div id="clients-tab" class="tab-content hidden">
+                <h2 class="text-2xl font-bold mb-6">👥 Connected Clients</h2>
+                
+                <div id="clientsList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Client cards will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="stats-tab" class="tab-content hidden">
+                <h2 class="text-2xl font-bold mb-6">📊 Statistics</h2>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white/10 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold" id="totalTransfers">0</div>
+                        <div class="text-sm opacity-75">Total Transfers</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold" id="totalBytes">0 MB</div>
+                        <div class="text-sm opacity-75">Data Transferred</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold" id="activeConnections">0</div>
+                        <div class="text-sm opacity-75">Active Connections</div>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold" id="uptime">0s</div>
+                        <div class="text-sm opacity-75">Server Uptime</div>
+                    </div>
+                </div>
+                
+                <!-- Charts -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white/10 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4">📈 Transfer Activity</h3>
+                        <canvas id="transferChart"></canvas>
+                    </div>
+                    <div class="bg-white/10 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4">📊 File Types</h3>
+                        <canvas id="fileTypeChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Recent Transfers -->
+                <div class="mt-8">
+                    <h3 class="text-lg font-semibold mb-4">📋 Recent Transfers</h3>
+                    <div id="recentTransfers" class="space-y-2 max-h-64 overflow-y-auto">
+                        <p class="text-sm opacity-75">No transfers yet...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Tools Tab -->
+            <div id="network-tab" class="tab-content hidden">
+                <h2 class="text-2xl font-bold mb-6">🌍 Network Tools</h2>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Network Information -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-semibold mb-4">🌐 Network Information</h3>
+                        <div id="networkInfo" class="bg-white/10 rounded-lg p-4">
+                            <p class="text-sm opacity-75">Loading network information...</p>
+                        </div>
+                        <button onclick="loadNetworkInfo()" 
+                                class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold hover-scale">
+                            🔄 Refresh Network Info
+                        </button>
+                    </div>
+                    
+                    <!-- Network Diagnostics -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-semibold mb-4">🔧 Network Diagnostics</h3>
+                        <div class="space-y-3">
+                            <button onclick="pingServer()" 
+                                    class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg hover-scale">
+                                🏓 Ping Server
+                            </button>
+                            <button onclick="testLatency()" 
+                                    class="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg hover-scale">
+                                ⚡ Test Latency
+                            </button>
+                            <button onclick="scanPorts()" 
+                                    class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg hover-scale">
+                            🔍 Scan Ports
+                            </button>
+                            <button onclick="checkBandwidth()" 
+                                    class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg hover-scale">
+                                📊 Check Bandwidth
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Diagnostic Results -->
+                <div class="mt-8">
+                    <h3 class="text-lg font-semibold mb-4">📋 Diagnostic Results</h3>
+                    <div id="diagnosticResults" class="bg-black/30 rounded-lg p-4 font-mono text-sm max-h-64 overflow-y-auto">
+                        <p class="opacity-75">Run diagnostic tests to see results...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-effect p-6 mt-8">
+        <div class="container mx-auto text-center">
+            <p class="opacity-75">Socket Programming Lab 1 - Cross-Computer File Transfer</p>
+            <p class="text-sm opacity-50 mt-2">Advanced Web Implementation with Socket.IO</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
