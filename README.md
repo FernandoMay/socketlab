@@ -196,7 +196,7 @@ This project provides comprehensive learning in:
 
 ## 🚀 Quick Start
 
-1. **Clone the repository**: `git clone <repository-url>`
+1. **Clone the repository**: `git clone https://github.com/FernandoMay/socketlab.git`
 2. **Explore implementations**: Choose your preferred language
 3. **Follow setup guides**: Detailed instructions in each directory
 4. **Launch applications**: Start transferring files between computers
