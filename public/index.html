@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket Programming Lab 1 - Cross-Computer File Transfer</title>
+  <base href="/socketlab/">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    * {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .hover-scale {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .hover-scale:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .tech-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .tech-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .progress-bar {
+      background: linear-gradient(90deg, #22c55e, #3b82f6, #8b5cf6);
+      background-size: 200% 100%;
+      animation: gradient 3s ease infinite;
+    }
+
+    @keyframes gradient {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    .floating {
+      animation: floating 3s ease-in-out infinite;
+    }
+
+    @keyframes floating {
+      0% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-20px);
+      }
+
+      100% {
+        transform: translateY(0px);
+      }
+    }
+
+    .pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .slide-in {
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body class="gradient-bg min-h-screen text-white">
+  <!-- Navigation -->
+  <nav class="glass-effect fixed w-full top-0 z-50 px-6 py-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <i class="fas fa-network-wired text-2xl"></i>
+        <span class="text-xl font-bold">Socket Programming Lab 1</span>
+      </div>
+      <div class="hidden md:flex space-x-6">
+        <a href="#implementations" class="hover:text-blue-300 transition">Implementations</a>
+        <a href="#features" class="hover:text-blue-300 transition">Features</a>
+        <a href="#visualizations" class="hover:text-blue-300 transition">Visualizations</a>
+        <a href="#report" class="hover:text-blue-300 transition">Lab Report</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="pt-32 pb-20 px-6">
+    <div class="container mx-auto text-center">
+      <div class="floating">
+        <i class="fas fa-exchange-alt text-6xl mb-6"></i>
+      </div>
+      <h1 class="text-5xl md:text-7xl font-bold mb-6 slide-in">
+        Cross-Computer File Transfer
+      </h1>
+      <p class="text-xl md:text-2xl mb-8 opacity-90 slide-in" style="animation-delay: 0.2s">
+        Advanced Socket Programming with Multi-Language Implementation
+      </p>
+      <div class="flex flex-wrap justify-center gap-4 slide-in" style="animation-delay: 0.4s">
+        <a href="#implementations"
+          class="glass-effect px-8 py-4 rounded-full hover-scale inline-flex items-center space-x-2">
+          <i class="fas fa-code"></i>
+          <span>View Implementations</span>
+        </a>
+        <a href="latex_report/lab_report.pdf"
+          class="glass-effect px-8 py-4 rounded-full hover-scale inline-flex items-center space-x-2">
+          <i class="fas fa-file-pdf"></i>
+          <span>Lab Report</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="py-16 px-6">
+    <div class="container mx-auto">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="glass-effect rounded-xl p-6 text-center hover-scale">
+          <i class="fas fa-code text-3xl mb-3"></i>
+          <div class="text-3xl font-bold">3</div>
+          <div class="text-sm opacity-75">Languages</div>
+        </div>
+        <div class="glass-effect rounded-xl p-6 text-center hover-scale">
+          <i class="fas fa-desktop text-3xl mb-3"></i>
+          <div class="text-3xl font-bold">6+</div>
+          <div class="text-sm opacity-75">Platforms</div>
+        </div>
+        <div class="glass-effect rounded-xl p-6 text-center hover-scale">
+          <i class="fas fa-shield-alt text-3xl mb-3"></i>
+          <div class="text-3xl font-bold">100%</div>
+          <div class="text-sm opacity-75">Integrity</div>
+        </div>
+        <div class="glass-effect rounded-xl p-6 text-center hover-scale">
+          <i class="fas fa-tachometer-alt text-3xl mb-3"></i>
+          <div class="text-3xl font-bold">35MB/s</div>
+          <div class="text-sm opacity-75">Max Speed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Implementations Section -->
+  <section id="implementations" class="py-20 px-6">
+    <div class="container mx-auto">
+      <h2 class="text-4xl font-bold text-center mb-16">Multi-Language Implementations</h2>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- Python Implementation -->
+        <div class="tech-card rounded-2xl p-8 hover-scale">
+          <div class="text-center mb-6">
+            <i class="fab fa-python text-5xl text-blue-400"></i>
+            <h3 class="text-2xl font-bold mt-4">Python</h3>
+            <p class="opacity-75">Desktop GUI Application</p>
+          </div>
+
+          <div class="space-y-4 mb-6">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Tkinter GUI with modern design</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Real-time progress tracking</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Network diagnostic tools</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>File integrity verification</span>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <div class="text-sm mb-2">Performance</div>
+            <div class="w-full bg-white/20 rounded-full h-2">
+              <div class="progress-bar h-2 rounded-full" style="width: 85%"></div>
+            </div>
+            <div class="text-xs opacity-75 mt-1">15-25 MB/s transfer speed</div>
+          </div>
+
+          <a href="python_implementation/" class="w-full glass-effect py-3 rounded-lg text-center block hover-scale">
+            <i class="fas fa-external-link-alt mr-2"></i>View Implementation
+          </a>
+        </div>
+
+        <!-- JavaScript Implementation -->
+        <div class="tech-card rounded-2xl p-8 hover-scale">
+          <div class="text-center mb-6">
+            <i class="fab fa-node-js text-5xl text-green-400"></i>
+            <h3 class="text-2xl font-bold mt-4">JavaScript</h3>
+            <p class="opacity-75">Web-Based Application</p>
+          </div>
+
+          <div class="space-y-4 mb-6">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Socket.IO real-time communication</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Responsive web interface</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Interactive charts & statistics</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Multi-client support</span>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <div class="text-sm mb-2">Performance</div>
+            <div class="w-full bg-white/20 rounded-full h-2">
+              <div class="progress-bar h-2 rounded-full" style="width: 95%"></div>
+            </div>
+            <div class="text-xs opacity-75 mt-1">20-35 MB/s transfer speed</div>
+          </div>
+
+          <a href="javascript_implementation/"
+            class="w-full glass-effect py-3 rounded-lg text-center block hover-scale">
+            <i class="fas fa-external-link-alt mr-2"></i>View Implementation
+          </a>
+        </div>
+
+        <!-- Dart Implementation -->
+        <div class="tech-card rounded-2xl p-8 hover-scale">
+          <div class="text-center mb-6">
+            <i class="fas fa-mobile-alt text-5xl text-purple-400"></i>
+            <h3 class="text-2xl font-bold mt-4">Dart/Flutter</h3>
+            <p class="opacity-75">Cross-Platform Mobile App</p>
+          </div>
+
+          <div class="space-y-4 mb-6">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Glassmorphic UI design</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Cross-platform compatibility</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Provider state management</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-check text-green-400"></i>
+              <span>Native performance</span>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <div class="text-sm mb-2">Performance</div>
+            <div class="w-full bg-white/20 rounded-full h-2">
+              <div class="progress-bar h-2 rounded-full" style="width: 90%"></div>
+            </div>
+            <div class="text-xs opacity-75 mt-1">18-30 MB/s transfer speed</div>
+          </div>
+
+          <a href="dart_implementation/" class="w-full glass-effect py-3 rounded-lg text-center block hover-scale">
+            <i class="fas fa-external-link-alt mr-2"></i>View Implementation
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-20 px-6">
+    <div class="container mx-auto">
+      <h2 class="text-4xl font-bold text-center mb-16">Innovative Features</h2>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="glass-effect rounded-xl p-6 hover-scale">
+          <i class="fas fa-chart-line text-3xl mb-4 text-blue-400"></i>
+          <h3 class="text-xl font-bold mb-3">Real-time Analytics</h3>
+          <p class="opacity-75">Live transfer statistics, performance metrics, and interactive charts for monitoring
+            file transfers.</p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-6 hover-scale">
+          <i class="fas fa-shield-alt text-3xl mb-4 text-green-400"></i>
+          <h3 class="text-xl font-bold mb-3">Security & Integrity</h3>
+          <p class="opacity-75">SHA-256 checksum verification, encrypted connections, and comprehensive error handling.
+          </p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-6 hover-scale">
+          <i class="fas fa-tachometer-alt text-3xl mb-4 text-purple-400"></i>
+          <h3 class="text-xl font-bold mb-3">High Performance</h3>
+          <p class="opacity-75">Optimized file chunking, parallel processing, and efficient memory management.</p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-6 hover-scale">
+          <i class="fas fa-network-wired text-3xl mb-4 text-orange-400"></i>
+          <h3 class="text-xl font-bold mb-3">Network Tools</h3>
+          <p class="opacity-75">IP detection, port scanning, latency testing, and network diagnostics.</p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-6 hover-scale">
+          <i class="fas fa-palette text-3xl mb-4 text-pink-400"></i>
+          <h3 class="text-xl font-bold mb-3">Modern UI/UX</h3>
+          <p class="opacity-75">Glassmorphic design, smooth animations, responsive layouts, and intuitive interfaces.
+          </p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-6 hover-scale">
+          <i class="fas fa-code-branch text-3xl mb-4 text-cyan-400"></i>
+          <h3 class="text-xl font-bold mb-3">Cross-Platform</h3>
+          <p class="opacity-75">Support for Windows, Linux, macOS, Android, iOS, and Web platforms.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Visualizations Section -->
+  <section id="visualizations" class="py-20 px-6">
+    <div class="container mx-auto">
+      <h2 class="text-4xl font-bold text-center mb-16">Interactive Visualizations</h2>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="glass-effect rounded-2xl p-8 hover-scale">
+          <i class="fas fa-project-diagram text-4xl mb-4 text-blue-400"></i>
+          <h3 class="text-2xl font-bold mb-4">Network Topology Visualizer</h3>
+          <p class="opacity-75 mb-6">Interactive network visualization showing real-time connections, data flow, and
+            network topology with support for LAN, WAN, and mesh networks.</p>
+
+          <div class="space-y-3 mb-6">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-circle text-green-400 text-xs"></i>
+              <span>Real-time network simulation</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-circle text-blue-400 text-xs"></i>
+              <span>Interactive node management</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-circle text-purple-400 text-xs"></i>
+              <span>Animated data transfer visualization</span>
+            </div>
+          </div>
+
+          <a href="visualizations/network_topology.html"
+            class="w-full glass-effect py-3 rounded-lg text-center block hover-scale">
+            <i class="fas fa-play mr-2"></i>Launch Network Visualizer
+          </a>
+        </div>
+
+        <div class="glass-effect rounded-2xl p-8 hover-scale">
+          <i class="fas fa-exchange-alt text-4xl mb-4 text-green-400"></i>
+          <h3 class="text-2xl font-bold mb-4">File Transfer Animation</h3>
+          <p class="opacity-75 mb-6">Step-by-step animation of file transfer process showing data packets, progress
+            tracking, and transfer statistics with realistic simulation.</p>
+
+          <div class="space-y-3 mb-6">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-circle text-green-400 text-xs"></i>
+              <span>Real-time transfer progress</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-circle text-orange-400 text-xs"></i>
+              <span>Multiple file type support</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-circle text-red-400 text-xs"></i>
+              <span>Speed and performance metrics</span>
+            </div>
+          </div>
+
+          <a href="visualizations/transfer_animation.html"
+            class="w-full glass-effect py-3 rounded-lg text-center block hover-scale">
+            <i class="fas fa-play mr-2"></i>Launch Transfer Animation
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lab Report Section -->
+  <section id="report" class="py-20 px-6">
+    <div class="container mx-auto">
+      <h2 class="text-4xl font-bold text-center mb-16">Comprehensive Lab Report</h2>
+
+      <div class="glass-effect rounded-2xl p-8 max-w-4xl mx-auto">
+        <div class="grid md:grid-cols-2 gap-8 mb-8">
+          <div>
+            <i class="fas fa-file-pdf text-4xl mb-4 text-red-400"></i>
+            <h3 class="text-2xl font-bold mb-4">LaTeX Academic Report</h3>
+            <p class="opacity-75 mb-4">Professional 45-page academic report with complete documentation, performance
+              analysis, and theoretical background.</p>
+
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-check text-green-400"></i>
+                <span>Complete experimental procedure</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-check text-green-400"></i>
+                <span>Performance analysis & metrics</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-check text-green-400"></i>
+                <span>Code examples & diagrams</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-check text-green-400"></i>
+                <span>Academic references & citations</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="glass-effect rounded-lg p-4 mb-4">
+              <h4 class="font-bold mb-2">Report Contents</h4>
+              <ul class="text-sm space-y-1 opacity-75">
+                <li>• Theoretical Background</li>
+                <li>• Implementation Details</li>
+                <li>• Experimental Procedure</li>
+                <li>• Results & Analysis</li>
+                <li>• Performance Comparison</li>
+                <li>• Troubleshooting Guide</li>
+              </ul>
+            </div>
+
+            <div class="glass-effect rounded-lg p-4">
+              <h4 class="font-bold mb-2">Technical Features</h4>
+              <ul class="text-sm space-y-1 opacity-75">
+                <li>• TikZ network diagrams</li>
+                <li>• Performance charts</li>
+                <li>• Syntax-highlighted code</li>
+                <li>• Professional formatting</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-4">
+          <a href="latex_report/lab_report.pdf"
+            class="glass-effect px-6 py-3 rounded-lg hover-scale inline-flex items-center space-x-2">
+            <i class="fas fa-download"></i>
+            <span>Download PDF Report</span>
+          </a>
+          <a href="latex_report/lab_report.tex"
+            class="glass-effect px-6 py-3 rounded-lg hover-scale inline-flex items-center space-x-2">
+            <i class="fas fa-code"></i>
+            <span>View LaTeX Source</span>
+          </a>
+          <a href="latex_report/README.md"
+            class="glass-effect px-6 py-3 rounded-lg hover-scale inline-flex items-center space-x-2">
+            <i class="fas fa-book"></i>
+            <span>Report Documentation</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Getting Started Section -->
+  <section class="py-20 px-6">
+    <div class="container mx-auto">
+      <h2 class="text-4xl font-bold text-center mb-16">Getting Started</h2>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="glass-effect rounded-xl p-6 text-center">
+          <div class="text-4xl mb-4">1️⃣</div>
+          <h3 class="text-xl font-bold mb-3">Choose Your Language</h3>
+          <p class="opacity-75">Select from Python, JavaScript, or Dart implementation based on your preference and
+            platform requirements.</p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-6 text-center">
+          <div class="text-4xl mb-4">2️⃣</div>
+          <h3 class="text-xl font-bold mb-3">Setup Environment</h3>
+          <p class="opacity-75">Install required dependencies and configure network settings following the detailed
+            setup guides.</p>
+        </div>
+
+        <div class="glass-effect rounded-xl p-6 text-center">
+          <div class="text-4xl mb-4">3️⃣</div>
+          <h3 class="text-xl font-bold mb-3">Start Transferring</h3>
+          <p class="opacity-75">Launch the applications, configure connection settings, and begin transferring files
+            between computers.</p>
+        </div>
+      </div>
+
+      <div class="mt-12 text-center">
+        <a href="#implementations"
+          class="glass-effect px-8 py-4 rounded-full text-lg hover-scale inline-flex items-center space-x-2">
+          <i class="fas fa-rocket"></i>
+          <span>Get Started Now</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="glass-effect py-12 px-6">
+    <div class="container mx-auto">
+      <div class="grid md:grid-cols-4 gap-8 mb-8">
+        <div>
+          <h3 class="text-lg font-bold mb-4">Project</h3>
+          <ul class="space-y-2 opacity-75">
+            <li><a href="#implementations" class="hover:text-white">Implementations</a></li>
+            <li><a href="#features" class="hover:text-white">Features</a></li>
+            <li><a href="#visualizations" class="hover:text-white">Visualizations</a></li>
+            <li><a href="#report" class="hover:text-white">Lab Report</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold mb-4">Technologies</h3>
+          <ul class="space-y-2 opacity-75">
+            <li>Python & Tkinter</li>
+            <li>Node.js & Socket.IO</li>
+            <li>Dart & Flutter</li>
+            <li>HTML5 & CSS3</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold mb-4">Resources</h3>
+          <ul class="space-y-2 opacity-75">
+            <li><a href="latex_report/lab_report.pdf" class="hover:text-white">Lab Report</a></li>
+            <li><a href="latex_report/README.md" class="hover:text-white">Documentation</a></li>
+            <li><a href="visualizations/" class="hover:text-white">Visualizations</a></li>
+            <li><a href="https://github.com" class="hover:text-white">Source Code</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-bold mb-4">Connect</h3>
+          <div class="flex space-x-4">
+            <a href="#" class="text-2xl hover:text-blue-400"><i class="fab fa-github"></i></a>
+            <a href="#" class="text-2xl hover:text-blue-400"><i class="fab fa-linkedin"></i></a>
+            <a href="#" class="text-2xl hover:text-blue-400"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="text-2xl hover:text-blue-400"><i class="fas fa-envelope"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-t border-white/20 pt-8 text-center opacity-75">
+        <p>&copy; 2025 Socket Programming Lab 1. Educational project for cross-computer file transfer.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Add scroll animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('slide-in');
+        }
+      });
+    }, observerOptions);
+
+    // Observe all sections
+    document.querySelectorAll('section').forEach(section => {
+      observer.observe(section);
+    });
+
+    // Add parallax effect to hero section
+    window.addEventListener('scroll', () => {
+      const scrolled = window.pageYOffset;
+      const parallax = document.querySelector('.floating');
+      if (parallax) {
+        const speed = 0.5;
+        parallax.style.transform = `translateY(${scrolled * speed}px)`;
+      }
+    });
+
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "firebase/app";
+    import { getAnalytics } from "firebase/analytics";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyAZ_L0QRKTkkNPP8pCoTYj4v1o6bgdqk-A",
+      authDomain: "fb111-bc461.firebaseapp.com",
+      databaseURL: "https://fb111-bc461.firebaseio.com",
+      projectId: "fb111-bc461",
+      storageBucket: "fb111-bc461.appspot.com",
+      messagingSenderId: "1085973434586",
+      appId: "1:1085973434586:web:c8d7183286dfdcf31dd5e3",
+      measurementId: "G-N084CPQJ3V"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
+</body>
+
+</html>
