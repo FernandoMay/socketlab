@@ -24,7 +24,8 @@
         "permission_handler",
         "provider",
         "shared_preferences",
-        "socket_io_client"
+        "socket_io_client",
+        "web_socket_channel"
       ],
       "devDependencies": [
         "flutter_lints",
@@ -732,6 +733,15 @@
       "dependencies": [
         "collection",
         "meta"
+      ]
+    },
+    {
+      "name": "web_socket_channel",
+      "version": "2.4.0",
+      "dependencies": [
+        "async",
+        "crypto",
+        "stream_channel"
       ]
     }
   ],

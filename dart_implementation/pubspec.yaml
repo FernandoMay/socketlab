@@ -20,9 +20,10 @@ dependencies:
   # Networking
   socket_io_client: ^2.0.3+1
   http: ^1.1.0
+  web_socket_channel: ^2.4.0
   
   # File handling
-  file_picker: ^6.1.1
+  file_picker: ^6.2.1
   path_provider: ^2.1.1
   permission_handler: ^11.0.1
   

@@ -4,15 +4,21 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:async';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+// Platform-specific imports
+import 'package:web_socket_channel/web_socket_channel.dart'
+    if (dart.library.io) 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/status.dart' as status;
 
 class SocketService {
-  Socket? _socket;
+  dynamic _socket;
   bool _isConnected = false;
   final StreamController<Map<String, dynamic>> _messageController =
       StreamController.broadcast();
   final StreamController<double> _progressController =
       StreamController.broadcast();
+  StreamSubscription? _socketSubscription;
 
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
   Stream<double> get progress => _progressController.stream;
@@ -20,45 +26,88 @@ class SocketService {
 
   Future<bool> connect(String serverUrl, {Map<String, dynamic>? auth}) async {
     try {
-      _socket = await Socket.connect(
-          serverUrl.split(':')[0], int.parse(serverUrl.split(':')[1]));
-      _isConnected = true;
+      if (kIsWeb) {
+        // Web implementation using WebSocket
+        final wsScheme = serverUrl.startsWith('https') ? 'wss://' : 'ws://';
+        final wsUrl = serverUrl.replaceFirst(RegExp(r'^https?://'), wsScheme);
 
-      // Send registration
-      if (auth != null) {
-        _send('register', auth);
+        _socket = WebSocketChannel.connect(Uri.parse(wsUrl));
+        _isConnected = true;
+
+        // Send registration
+        if (auth != null) {
+          _send('register', auth);
+        }
+
+        // Listen for messages
+        _socketSubscription = _socket!.stream.listen(
+          (data) => _handleMessage(data is String ? data : utf8.decode(data)),
+          onError: (error) {
+            print('WebSocket error: $error');
+            _isConnected = false;
+          },
+          onDone: () {
+            print('WebSocket disconnected');
+            _isConnected = false;
+          },
+          cancelOnError: true,
+        );
+      } else {
+        // Native implementation using raw sockets
+        _socket = await Socket.connect(
+            serverUrl.split(':')[0], int.parse(serverUrl.split(':')[1]));
+        _isConnected = true;
+
+        // Send registration
+        if (auth != null) {
+          _send('register', auth);
+        }
+
+        // Listen for messages
+        _socketSubscription = _socket!.listen(
+          (data) => _handleMessage(utf8.decode(data)),
+          onError: (error) {
+            print('Socket error: $error');
+            _isConnected = false;
+          },
+          onDone: () {
+            print('Socket disconnected');
+            _isConnected = false;
+          },
+          cancelOnError: true,
+        );
       }
-
-      // Listen for messages
-      _socket!.listen(
-        (data) => _handleMessage(utf8.decode(data)),
-        onError: (error) {
-          debugPrint('Socket error: $error');
-          _isConnected = false;
-        },
-        onDone: () {
-          debugPrint('Socket disconnected');
-          _isConnected = false;
-        },
-      );
 
       return true;
     } catch (e) {
-      debugPrint('Connection failed: $e');
+      print('Connection failed: $e');
       return false;
     }
   }
 
   void disconnect() {
-    _socket?.close();
+    if (kIsWeb) {
+      _socket?.sink.close(status.goingAway);
+    } else {
+      _socket?.close();
+    }
+    _socketSubscription?.cancel();
     _socket = null;
     _isConnected = false;
   }
 
   void _send(String event, Map<String, dynamic> data) {
     if (_socket != null && _isConnected) {
-      final message = jsonEncode({'event': event, 'data': data});
-      _socket!.add(utf8.encode(message));
+      try {
+        final message = jsonEncode({'event': event, 'data': data});
+        if (kIsWeb) {
+          _socket!.sink.add(message);
+        } else {
+          _socket!.add(utf8.encode(message));
+        }
+      } catch (e) {
+        print('Error sending message: $e');
+      }
     }
   }
 
@@ -72,7 +121,8 @@ class SocketService {
         _progressController.add(decoded['data']['progress']?.toDouble() ?? 0.0);
       }
     } catch (e) {
-      debugPrint('Failed to parse message: $e');
+      rethrow;
+      // 'Failed to parse message: $e';
     }
   }
 
@@ -122,10 +172,11 @@ class SocketService {
     });
   }
 
-  void dispose() {
-    _messageController.close();
-    _progressController.close();
+  Future<void> dispose() async {
+    await _messageController.close();
+    await _progressController.close();
     disconnect();
+    _socketSubscription?.cancel();
   }
 }
 
