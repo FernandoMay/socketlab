@@ -28,10 +28,36 @@ class SocketService {
     try {
       if (kIsWeb) {
         // Web implementation using WebSocket
-        final wsScheme = serverUrl.startsWith('https') ? 'wss://' : 'ws://';
-        final wsUrl = serverUrl.replaceFirst(RegExp(r'^https?://'), wsScheme);
+        Uri uri;
 
-        _socket = WebSocketChannel.connect(Uri.parse(wsUrl));
+        try {
+          // Try to parse as a full URL first
+          if (!serverUrl.startsWith(RegExp(r'^https?://|^wss?://'))) {
+            // If no scheme is provided, assume ws://
+            serverUrl = 'ws://$serverUrl';
+          }
+
+          // Parse the URI
+          uri = Uri.parse(serverUrl);
+
+          // Ensure we have a websocket scheme
+          if (!uri.scheme.startsWith('ws')) {
+            uri = uri.replace(scheme: uri.scheme == 'https' ? 'wss' : 'ws');
+          }
+
+          // Ensure we have a port
+          if (uri.port == 0) {
+            uri = uri.replace(
+                port: 3000); // Default to port 3000 if not specified
+          }
+        } catch (e) {
+          // If parsing fails, try with default host and port
+          print('Failed to parse URL, using default: $e');
+          uri = Uri(scheme: 'ws', host: 'localhost', port: 3000);
+        }
+
+        print('Connecting to WebSocket at: $uri');
+        _socket = WebSocketChannel.connect(uri);
         _isConnected = true;
 
         // Send registration
@@ -54,8 +80,23 @@ class SocketService {
         );
       } else {
         // Native implementation using raw sockets
-        _socket = await Socket.connect(
-            serverUrl.split(':')[0], int.parse(serverUrl.split(':')[1]));
+        var host = 'localhost';
+        var port = 3000;
+
+        try {
+          final parts = serverUrl.split(':');
+          if (parts.length >= 2) {
+            host = parts[0];
+            port = int.tryParse(parts[1]) ?? port;
+          } else {
+            host = serverUrl;
+          }
+        } catch (e) {
+          print('Using default host/port: $e');
+        }
+
+        print('Connecting to socket at $host:$port');
+        _socket = await Socket.connect(host, port);
         _isConnected = true;
 
         // Send registration
