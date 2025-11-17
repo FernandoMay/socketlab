@@ -7,7 +7,7 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
+    "headers": [
       {
         "source": "/socketlab/**/*.pdf",
         "headers": [
@@ -16,7 +16,9 @@
             "value": "public, max-age=31536000, immutable"
           }
         ]
-      },
+      }
+    ],
+    "rewrites": [
       {
         "source": "/socketlab/implementations/(python|java|cpp|go|rust|dart)/**",
         "destination": "/socketlab/implementations/$1/index.html"
