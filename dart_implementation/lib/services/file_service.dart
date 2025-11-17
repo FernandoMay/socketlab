@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,7 +17,7 @@ class FileService {
         type: FileType.any,
         allowMultiple: false,
       );
-
+      
       return result?.files.first;
     } catch (e) {
       debugPrint('Error picking file: $e');
@@ -29,7 +31,7 @@ class FileService {
         type: FileType.any,
         allowMultiple: true,
       );
-
+      
       return result?.files;
     } catch (e) {
       debugPrint('Error picking files: $e');
@@ -40,11 +42,11 @@ class FileService {
   Future<String> getSavePath(String fileName) async {
     final directory = await getApplicationDocumentsDirectory();
     final saveDir = Directory('${directory.path}/received_files');
-
+    
     if (!await saveDir.exists()) {
       await saveDir.create(recursive: true);
     }
-
+    
     return '${saveDir.path}/$fileName';
   }
 
@@ -81,7 +83,7 @@ class FileService {
       final stat = await file.stat();
       final data = await file.readAsBytes();
       final checksum = await calculateChecksum(data);
-
+      
       return {
         'name': file.path.split('/').last,
         'path': file.path,
@@ -99,27 +101,26 @@ class FileService {
 
   String _getFileType(String filePath) {
     final extension = filePath.split('.').last.toLowerCase();
-
+    
     const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
     const documentTypes = ['pdf', 'doc', 'docx', 'txt', 'rtf'];
     const videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv'];
     const audioTypes = ['mp3', 'wav', 'flac', 'aac', 'ogg'];
     const archiveTypes = ['zip', 'rar', '7z', 'tar', 'gz'];
-
+    
     if (imageTypes.contains(extension)) return 'image';
     if (documentTypes.contains(extension)) return 'document';
     if (videoTypes.contains(extension)) return 'video';
     if (audioTypes.contains(extension)) return 'audio';
     if (archiveTypes.contains(extension)) return 'archive';
-
+    
     return 'unknown';
   }
 
   String formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
@@ -147,7 +148,7 @@ File integrity checksum will be calculated upon transfer.
       final savePath = await getSavePath(fileName);
       final file = File(savePath);
       await file.writeAsString(content);
-
+      
       return savePath;
     } catch (e) {
       debugPrint('Error creating test file: $e');
@@ -159,11 +160,11 @@ File integrity checksum will be calculated upon transfer.
     try {
       final directory = await getApplicationDocumentsDirectory();
       final saveDir = Directory('${directory.path}/received_files');
-
+      
       if (!await saveDir.exists()) {
         return [];
       }
-
+      
       final files = await saveDir.list().toList();
       return files.whereType<File>().map((file) => file.path).toList();
     } catch (e) {
@@ -193,17 +194,16 @@ File integrity checksum will be calculated upon transfer.
     }
   }
 
-  Future<Map<String, dynamic>> validateFile(
-      String filePath, String expectedChecksum) async {
+  Future<Map<String, dynamic>> validateFile(String filePath, String expectedChecksum) async {
     try {
       final file = File(filePath);
       if (!await file.exists()) {
         return {'valid': false, 'error': 'File does not exist'};
       }
-
+      
       final data = await file.readAsBytes();
       final actualChecksum = await calculateChecksum(data);
-
+      
       return {
         'valid': actualChecksum == expectedChecksum,
         'expectedChecksum': expectedChecksum,

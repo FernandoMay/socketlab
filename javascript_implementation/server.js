@@ -1,310 +1,474 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const multer = require('multer');
-const cors = require('cors');
-const fs = require('fs-extra');
-const path = require('path');
-const crypto = require('crypto');
-const mime = require('mime-types');
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
+// Test connection endpoint
+app.get('/api/test-connection', (req, res) => {
+  const { host, port = 8888 } = req.query;
+  
+  if (!host) {
+    return res.status(400).json({ error: 'Host parameter is required' });
+  }
+  
+  const startTime = Date.now();
+  let testResult = {
+    host: host,
+    port: port,
+    status: 'testing',
+    latency: null,
+    reachable: false
+  };
+  
+  const testSocket = require('net').Socket();
+  
+  testSocket.connect(port, host, () => {
+    const endTime = Date.now();
+    testResult.status = 'success';
+    testResult.latency = endTime - startTime;
+    testResult.reachable = true;
+    testSocket.destroy();
+    
+    res.json(testResult);
+  });
+  
+  testSocket.on('error', (err) => {
+    testResult.status = 'error';
+    testResult.error = err.message;
+    testResult.reachable = false;
+    
+    res.json(testResult);
+  });
+  
+  testSocket.setTimeout(5000, () => {
+    testResult.status = 'timeout';
+    testResult.error = 'Connection timeout';
+    testResult.reachable = false;
+    
+    res.json(testResult);
+  });
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('client'));
-
-// Storage configuration
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = 'client/uploads';
-        fs.ensureDirSync(uploadDir);
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + file.originalname);
-    }
-});
-
-const upload = multer({ 
-    storage: storage,
-    limits: {
-        fileSize: 100 * 1024 * 1024 // 100MB limit
-    }
-});
-
-// Ensure directories exist
-fs.ensureDirSync('client/downloads');
-fs.ensureDirSync('client/uploads');
-
-// Statistics tracking
-let stats = {
-    totalTransfers: 0,
-    totalBytes: 0,
-    activeConnections: 0,
-    startTime: new Date(),
-    transfers: []
-};
-
-// Connected clients
-let connectedClients = new Map();
-
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-    console.log(`🔗 Client connected: ${socket.id}`);
-    stats.activeConnections++;
-    
-    // Register client
-    socket.on('register', (data) => {
-        connectedClients.set(socket.id, {
-            id: socket.id,
-            studentId: data.studentId || 'Unknown',
-            ip: socket.handshake.address,
-            connectedAt: new Date()
-        });
-        
-        // Send updated client list
-        io.emit('clients-update', Array.from(connectedClients.values()));
-        
-        // Send current stats
-        socket.emit('stats-update', stats);
-        
-        console.log(`👤 Registered client: ${data.studentId} (${socket.id})`);
-    });
-    
-    // Handle file transfer request
-    socket.on('transfer-request', (data) => {
-        const { targetId, fileInfo } = data;
-        
-        // Forward transfer request to target client
-        io.to(targetId).emit('transfer-request', {
-            fromId: socket.id,
-            fromStudentId: connectedClients.get(socket.id)?.studentId,
-            fileInfo: fileInfo
-        });
-        
-        console.log(`📤 Transfer request from ${socket.id} to ${targetId}`);
-    });
-    
-    // Handle transfer response
-    socket.on('transfer-response', (data) => {
-        const { requestId, accepted } = data;
-        
-        // Forward response to requester
-        io.to(requestId).emit('transfer-response', {
-            fromId: socket.id,
-            accepted: accepted
-        });
-        
-        if (accepted) {
-            console.log(`✅ Transfer accepted between ${requestId} and ${socket.id}`);
-        } else {
-            console.log(`❌ Transfer rejected between ${requestId} and ${socket.id}`);
-        }
-    });
-    
-    // Handle file chunk transfer
-    socket.on('file-chunk', (data) => {
-        const { targetId, chunk, chunkIndex, totalChunks, fileId, checksum } = data;
-        
-        // Forward chunk to target client
-        io.to(targetId).emit('file-chunk', {
-            fromId: socket.id,
-            chunk: chunk,
-            chunkIndex: chunkIndex,
-            totalChunks: totalChunks,
-            fileId: fileId,
-            checksum: checksum
-        });
-        
-        // Update transfer progress
-        const progress = ((chunkIndex + 1) / totalChunks) * 100;
-        socket.emit('transfer-progress', { progress: progress });
-        io.to(targetId).emit('transfer-progress', { progress: progress });
-    });
-    
-    // Handle file transfer completion
-    socket.on('transfer-complete', (data) => {
-        const { targetId, fileId, fileName, fileSize, checksum } = data;
-        
-        // Update statistics
-        stats.totalTransfers++;
-        stats.totalBytes += fileSize;
-        stats.transfers.push({
-            id: fileId,
-            from: socket.id,
-            to: targetId,
-            fileName: fileName,
-            fileSize: fileSize,
-            timestamp: new Date(),
-            checksum: checksum
-        });
-        
-        // Notify completion
-        io.to(targetId).emit('transfer-complete', {
-            fromId: socket.id,
-            fileId: fileId,
-            fileName: fileName,
-            fileSize: fileSize,
-            checksum: checksum
-        });
-        
-        // Broadcast updated stats
-        io.emit('stats-update', stats);
-        
-        console.log(`✅ Transfer complete: ${fileName} (${fileSize} bytes)`);
-    });
-    
-    // Handle client disconnection
-    socket.on('disconnect', () => {
-        console.log(`❌ Client disconnected: ${socket.id}`);
-        stats.activeConnections--;
-        connectedClients.delete(socket.id);
-        
-        // Broadcast updated client list
-        io.emit('clients-update', Array.from(connectedClients.values()));
-        io.emit('stats-update', stats);
-    });
-});
-
-// REST API Routes
-
-// Get server statistics
-app.get('/api/stats', (req, res) => {
-    res.json(stats);
-});
-
-// Get connected clients
-app.get('/api/clients', (req, res) => {
-    res.json(Array.from(connectedClients.values()));
-});
-
-// Upload file endpoint
-app.post('/api/upload', upload.single('file'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
+// Ping test endpoint
+app.get('/api/ping', (req, res) => {
+  const { host } = req.query;
+  
+  if (!host) {
+    return res.status(400).json({ error: 'Host parameter is required' });
+  }
+  
+  const { exec } = require('child_process');
+  
+  exec(`ping -c 4 ${host}`, (error, stdout, stderr) => {
+    if (error) {
+      return res.status(500).json({ error: 'Ping command failed' });
     }
     
-    const fileHash = crypto.createHash('md5');
-    const fileBuffer = fs.readFileSync(req.file.path);
-    fileHash.update(fileBuffer);
-    const checksum = fileHash.digest('hex');
+    // Parse ping output
+    const lines = stdout.split('\n');
+    const pingStats = lines[lines.length - 2]; // Last line contains stats
     
-    const fileInfo = {
-        id: req.file.filename,
-        originalName: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-        checksum: checksum,
-        uploadTime: new Date()
+    const statsMatch = pingStats.match(/(\d+) packets transmitted, (\d+) received, (\d+)% packet loss/);
+    const rttMatch = pingStats.match(/rtt min\/avg\/max\/mdev = ([\d.]+)\/([\d.]+)\/([\d.]+)\/([\d.]+)/);
+    
+    const result = {
+      host: host,
+      transmitted: statsMatch ? parseInt(statsMatch[1]) : 0,
+      received: statsMatch ? parseInt(statsMatch[2]) : 0,
+      packetLoss: statsMatch ? parseInt(statsMatch[3]) : 100,
+      minRtt: rttMatch ? parseFloat(rttMatch[1]) : 0,
+      avgRtt: rttMatch ? parseFloat(rttMatch[2]) : 0,
+      maxRtt: rttMatch ? parseFloat(rttMatch[3]) : 0,
+      status: 'completed'
     };
     
-    res.json({
-        success: true,
-        file: fileInfo
-    });
+    res.json(result);
+  });
 });
 
-// Get uploaded files
-app.get('/api/files', (req, res) => {
-    try {
-        const files = fs.readdirSync('client/uploads').map(filename => {
-            const filePath = path.join('client/uploads', filename);
-            const stats = fs.statSync(filePath);
-            return {
-                name: filename,
-                size: stats.size,
-                uploadTime: stats.mtime,
-                url: `/uploads/${filename}`
-            };
+// Port scan endpoint
+app.get('/api/scan-ports', (req, res) => {
+  const { host, ports = '22,80,443,8080,8888' } = req.query;
+  
+  if (!host) {
+    return res.status(400).json({ error: 'Host parameter is required' });
+  }
+  
+  const portArray = ports.split(',').map(p => parseInt(p.trim()));
+  const net = require('net');
+  const results = [];
+  let completed = 0;
+  
+  portArray.forEach(port => {
+    const socket = new net.Socket();
+    socket.setTimeout(2000);
+    
+    socket.connect(port, host, () => {
+      results.push({
+        port: port,
+        status: 'open',
+        service: getServiceName(port)
+      });
+      socket.destroy();
+      completed++;
+    });
+    
+    socket.on('error', () => {
+      results.push({
+        port: port,
+        status: 'closed',
+        service: getServiceName(port)
+      });
+      socket.destroy();
+      completed++;
+    });
+    
+    socket.on('timeout', () => {
+      results.push({
+        port: port,
+        status: 'filtered',
+        service: getServiceName(port)
+      });
+      socket.destroy();
+      completed++;
+    });
+  });
+  
+  // Wait for all scans to complete
+  const checkInterval = setInterval(() => {
+    if (completed === portArray.length) {
+      clearInterval(checkInterval);
+      
+      res.json({
+        host: host,
+        scannedPorts: portArray,
+        results: results.sort((a, b) => a.port - b.port),
+        openPorts: results.filter(r => r.status === 'open'),
+        closedPorts: results.filter(r => r.status === 'closed'),
+        filteredPorts: results.filter(r => r.status === 'filtered'),
+        totalScanned: portArray.length,
+        scanTime: new Date().toISOString()
+      });
+    }
+  }, 100);
+});
+
+function getServiceName(port) {
+  const services = {
+    20: 'FTP',
+    21: 'FTP',
+    22: 'SSH',
+    23: 'Telnet',
+    25: 'SMTP',
+    53: 'DNS',
+    80: 'HTTP',
+    110: 'POP3',
+    143: 'IMAP',
+    443: 'HTTPS',
+    993: 'IMAPS',
+    995: 'POP3S',
+    3306: 'MySQL',
+    5432: 'PostgreSQL',
+    8080: 'HTTP-Alt',
+    8888: 'Custom App',
+    3000: 'Node.js',
+    5000: 'Flask',
+    8000: 'Django'
+  };
+  
+  return services[port] || 'Unknown';
+}
+
+// Bandwidth test endpoint
+app.get('/api/bandwidth-test', (req, res) => {
+  const { duration = 10 } = req.query;
+  
+  const testData = Buffer.alloc(1024 * 1024); // 1MB test data
+  const startTime = Date.now();
+  
+  res.writeHead(200, {
+    'Content-Type': 'application/octet-stream',
+    'Content-Disposition': 'attachment; filename="bandwidth-test.dat"',
+    'Content-Length': testData.length
+  });
+  
+  res.end(testData);
+  
+  const endTime = Date.now();
+  const testDuration = (endTime - startTime) / 1000;
+  
+  // Store test result (in a real implementation, this would be saved to database)
+  const result = {
+    testDuration: testDuration,
+    dataSize: testData.length,
+    estimatedBandwidth: (testData.length * 8) / testDuration, // bits per second
+    testTime: new Date().toISOString()
+  };
+  
+  console.log('Bandwidth test completed:', result);
+});
+
+// Get bandwidth test results
+app.get('/api/bandwidth-results', (req, res) => {
+  // In a real implementation, this would fetch from database
+  // For now, return simulated results
+  res.json({
+    lastTest: {
+      testDuration: 8.5,
+      dataSize: 1048576,
+      estimatedBandwidth: 9876543, // ~9.4 Mbps
+      testTime: new Date().toISOString()
+    },
+    history: [
+      {
+        testDuration: 7.2,
+        estimatedBandwidth: 12345678, // ~11.8 Mbps
+        testTime: new Date(Date.now() - 3600000).toISOString()
+      },
+      {
+        testDuration: 9.1,
+        estimatedBandwidth: 8765432, // ~8.4 Mbps
+        testTime: new Date(Date.now() - 7200000).toISOString()
+      }
+    ]
+  });
+});
+
+// Network performance monitoring
+app.get('/api/network-performance', (req, res) => {
+  const os = require('os');
+  const process = require('process');
+  
+  const cpus = os.cpus();
+  const memory = process.memoryUsage();
+  const networkInterfaces = os.networkInterfaces();
+  
+  let totalNetworkBytes = { rx: 0, tx: 0 };
+  
+  // Get network stats (Linux specific, would need platform detection)
+  try {
+    const stats = require('fs').statSync('/proc/net/dev');
+    // Parse network stats (simplified)
+  } catch (error) {
+    // Fallback for other platforms
+    console.log('Network stats not available on this platform');
+  }
+  
+  const performance = {
+    timestamp: new Date().toISOString(),
+    cpu: {
+      usage: process.cpuUsage(),
+      cores: cpus.length,
+      model: cpus[0]?.model || 'Unknown',
+      speed: cpus[0]?.speed || 0
+    },
+    memory: {
+      total: os.totalmem(),
+      free: os.freemem(),
+      used: os.totalmem() - os.freemem(),
+      heapTotal: memory.heapTotal,
+      heapUsed: memory.heapUsed,
+      external: memory.external
+    },
+    network: {
+      interfaces: Object.keys(networkInterfaces),
+      stats: totalNetworkBytes,
+      uptime: os.uptime()
+    }
+  };
+  
+  res.json(performance);
+});
+
+// Traceroute endpoint
+app.get('/api/traceroute', (req, res) => {
+  const { host } = req.query;
+  
+  if (!host) {
+    return res.status(400).json({ error: 'Host parameter is required' });
+  }
+  
+  const { exec } = require('child_process');
+  
+  exec(`traceroute ${host}`, (error, stdout, stderr) => {
+    if (error) {
+      return res.status(500).json({ error: 'Traceroute command failed' });
+    }
+    
+    const lines = stdout.split('\n');
+    const hops = [];
+    
+    lines.forEach((line, index) => {
+      const match = line.match(/^\s*(\d+)\s+([\w.-]+)\s+([\w.-]+)\s+([\w.-]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+      
+      if (match) {
+        hops.push({
+          hop: parseInt(match[1]),
+          host: match[2],
+          ip1: match[3],
+          ip2: match[4],
+          rtt1: parseFloat(match[5]),
+          rtt2: parseFloat(match[6]),
+          rtt3: parseFloat(match[7]),
+          avgRtt: (parseFloat(match[5]) + parseFloat(match[6]) + parseFloat(match[7])) / 3
         });
-        
-        res.json(files);
-    } catch (error) {
-        res.status(500).json({ error: 'Error reading files' });
-    }
-});
-
-// Download file endpoint
-app.get('/api/download/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join('client/uploads', filename);
-    
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'File not found' });
-    }
-    
-    res.download(filePath);
-});
-
-// Delete file endpoint
-app.delete('/api/files/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join('client/uploads', filename);
-    
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'File not found' });
-    }
-    
-    fs.unlinkSync(filePath);
-    res.json({ success: true });
-});
-
-// Network utilities
-app.get('/api/network-info', (req, res) => {
-    const os = require('os');
-    const networkInterfaces = os.networkInterfaces();
-    
-    const interfaces = {};
-    for (const [name, addresses] of Object.entries(networkInterfaces)) {
-        interfaces[name] = addresses.filter(addr => addr.family === 'IPv4' && !addr.internal);
-    }
+      }
+    });
     
     res.json({
-        hostname: os.hostname(),
-        platform: os.platform(),
-        arch: os.arch(),
-        uptime: os.uptime(),
-        interfaces: interfaces
+      target: host,
+      hops: hops,
+      totalHops: hops.length,
+      finalHop: hops[hops.length - 1],
+      avgLatency: hops.length > 0 ? hops.reduce((sum, hop) => sum + hop.avgRtt, 0) / hops.length : 0,
+      timestamp: new Date().toISOString()
     });
+  });
 });
 
-// Serve uploaded files
-app.use('/uploads', express.static('client/uploads'));
-
-// Main route
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client', 'index.html'));
-});
-
-// Error handling middleware
-app.use((error, req, res, next) => {
-    console.error('❌ Server error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('🛑 SIGTERM received, shutting down gracefully');
-    server.close(() => {
-        console.log('✅ Server closed');
-        process.exit(0);
+// DNS lookup endpoint
+app.get('/api/dns-lookup', (req, res) => {
+  const { hostname } = req.query;
+  
+  if (!hostname) {
+    return res.status(400).json({ error: 'Hostname parameter is required' });
+  }
+  
+  const dns = require('dns');
+  
+  dns.resolve4(hostname, (error, addresses) => {
+    if (error) {
+      return res.status(500).json({ error: 'DNS lookup failed' });
+    }
+    
+    dns.reverse(addresses[0], (error, hostnames) => {
+      if (error) {
+        return res.status(500).json({ error: 'Reverse DNS lookup failed' });
+      }
+      
+      res.json({
+        hostname: hostname,
+        addresses: addresses,
+        reverseHostnames: hostnames,
+        primaryAddress: addresses[0],
+        timestamp: new Date().toISOString()
+      });
     });
+  });
 });
 
-const PORT = process.env.PORT || 3000;
+// Network configuration endpoint
+app.get('/api/network-config', (req, res) => {
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  
+  const config = {
+    hostname: os.hostname(),
+    platform: os.platform(),
+    arch: os.arch(),
+    uptime: os.uptime(),
+    loadavg: os.loadavg(),
+    cpus: os.cpus(),
+    networkInterfaces: {},
+    defaultGateway: null,
+    dnsServers: []
+  };
+  
+  // Process network interfaces
+  Object.keys(networkInterfaces).forEach(name => {
+    const interfaces = networkInterfaces[name];
+    const ipv4Interfaces = interfaces.filter(iface => iface.family === 'IPv4' && !iface.internal);
+    
+    if (ipv4Interfaces.length > 0) {
+      config.networkInterfaces[name] = {
+        ipv4: ipv4Interfaces.map(iface => ({
+          address: iface.address,
+          netmask: iface.netmask,
+          broadcast: iface.broadcast,
+          mac: iface.mac
+        })),
+        ipv6: interfaces.filter(iface => iface.family === 'IPv6' && !iface.internal).map(iface => ({
+          address: iface.address,
+          netmask: iface.netmask,
+          scope: iface.scope
+        }))
+      };
+    }
+  });
+  
+  // Try to get default gateway (platform specific)
+  try {
+    const { exec } = require('child_process');
+    
+    if (os.platform() === 'linux') {
+      exec('ip route | grep default', (error, stdout) => {
+        if (!error && stdout) {
+          const match = stdout.match(/default via ([\d.]+)/);
+          if (match) {
+            config.defaultGateway = match[1];
+          }
+        }
+      });
+    } else if (os.platform() === 'win32') {
+      exec('ipconfig', (error, stdout) => {
+        if (!error && stdout) {
+          const lines = stdout.split('\n');
+          for (const line of lines) {
+            if (line.includes('Default Gateway')) {
+              const match = line.match(/: ([\d.]+)/);
+              if (match) {
+                config.defaultGateway = match[1];
+                break;
+              }
+            }
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.log('Could not determine default gateway');
+  }
+  
+  res.json(config);
+});
+
+// Port monitoring endpoint
+app.get('/api/port-monitor', (req, res) => {
+  const { port = 8888 } = req.query;
+  
+  const net = require('net');
+  const server = net.createServer();
+  
+  server.on('connection', (socket) => {
+    const clientAddress = socket.remoteAddress;
+    const clientPort = socket.remotePort;
+    
+    console.log(`Connection from ${clientAddress}:${clientPort}`);
+    
+    socket.on('data', (data) => {
+      console.log(`Received from ${clientAddress}: ${data}`);
+      socket.write(`Echo: ${data}`);
+    });
+    
+    socket.on('end', () => {
+      console.log(`Client ${clientAddress}:${clientPort} disconnected`);
+    });
+    
+    socket.on('error', (err) => {
+      console.error(`Socket error from ${clientAddress}: ${err.message}`);
+    });
+  });
+  
+  server.listen(port, () => {
+    console.log(`Port monitor listening on port ${port}`);
+  });
+  
+  res.json({
+    status: 'monitoring',
+    port: port,
+    message: `Port monitor started on port ${port}`,
+    timestamp: new Date().toISOString()
+  });
+});
+
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-    console.log(`🚀 Socket File Transfer Server running on port ${PORT}`);
-    console.log(`📱 Web interface: http://localhost:${PORT}`);
-    console.log(`🔗 Socket.IO server ready for connections`);
-    console.log(`📊 Statistics tracking enabled`);
+  console.log(`🚀 Socket Programming Lab 1 - Network Tools Server running on port ${PORT}`);
+  console.log(`📊 Network monitoring and testing tools available`);
+  console.log(`🔍 API endpoints ready for network diagnostics`);
 });

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AnimatedBackground extends StatefulWidget {
   const AnimatedBackground({super.key});
@@ -20,12 +21,12 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
       duration: const Duration(seconds: 20),
       vsync: this,
     )..repeat();
-
+    
     _controller2 = AnimationController(
       duration: const Duration(seconds: 15),
       vsync: this,
     )..repeat();
-
+    
     _controller3 = AnimationController(
       duration: const Duration(seconds: 25),
       vsync: this,
