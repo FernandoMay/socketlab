@@ -1,3 +1,89 @@
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const cors = require('cors');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+app.use(cors());
+app.use(express.static(path.join(__dirname, '.next/static')));
+app.use(express.static(path.join(__dirname, 'public')));
+
+const activeTransfers = new Map();
+const clients = new Map();
+
+io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
+  clients.set(socket.id, { lastSeen: Date.now(), isOnline: true });
+
+  socket.on('register', (clientInfo) => {
+    clients.set(socket.id, {
+      ...clientInfo,
+      lastSeen: Date.now(),
+      isOnline: true
+    });
+    io.emit('clients-updated', Array.from(clients.entries()).map(([id, data]) => ({ id, ...data })));
+  });
+
+  socket.on('start-transfer', (transferData) => {
+    const transferId = transferData.transferId;
+    activeTransfers.set(transferId, {
+      ...transferData,
+      status: 'in-progress',
+      progress: 0,
+      startTime: Date.now(),
+      bytesTransferred: 0
+    });
+    io.emit('transfer-update', activeTransfers.get(transferId));
+  });
+
+  socket.on('chunk-upload', (chunkData) => {
+    const transfer = activeTransfers.get(chunkData.transferId);
+    if (transfer) {
+      const now = Date.now();
+      const timeElapsed = (now - transfer.startTime) / 1000; // in seconds
+      const bytesPerSecond = chunkData.bytesTransferred / timeElapsed;
+      
+      const updatedTransfer = {
+        ...transfer,
+        progress: chunkData.progress,
+        status: chunkData.progress === 100 ? 'completed' : 'in-progress',
+        speed: bytesPerSecond,
+        bytesTransferred: chunkData.bytesTransferred,
+        timeRemaining: chunkData.progress === 100 
+          ? 0 
+          : (transfer.size - chunkData.bytesTransferred) / bytesPerSecond
+      };
+      
+      activeTransfers.set(chunkData.transferId, updatedTransfer);
+      io.emit('transfer-update', updatedTransfer);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+    const client = clients.get(socket.id);
+    if (client) {
+      client.isOnline = false;
+      client.lastSeen = Date.now();
+      io.emit('clients-updated', Array.from(clients.entries()).map(([id, data]) => ({ id, ...data })));
+    }
+  });
+});
+
+// const PORT = process.env.PORT || 3001;
+// server.listen(PORT, () => {
+//   console.log(`Server running on port ${PORT}`);
+// });
+
 // Test connection endpoint
 app.get('/api/test-connection', (req, res) => {
   const { host, port = 8888 } = req.query;

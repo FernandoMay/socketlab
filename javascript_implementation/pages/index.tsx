@@ -9,7 +9,7 @@ import { FileTransfer, TransferStatus } from '../types';
 
 export default function Home() {
   const [transfers, setTransfers] = useState<FileTransfer[]>([]);
-  const { isConnected, socket } = useSocket('http://localhost:3001');
+  const { isConnected, socket } = useSocket('http://localhost:3000');
 
   useEffect(() => {
     if (!socket) return;
@@ -32,7 +32,7 @@ export default function Home() {
   const handleFileSelect = async (files: File[]) => {
     if (!socket) return;
     
-    files.forEach(file => {
+    files.forEach(async file => {
       const transfer: FileTransfer = {
         id: Date.now().toString(),
         fileName: file.name,
