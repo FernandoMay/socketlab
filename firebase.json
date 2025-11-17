@@ -9,7 +9,7 @@
     ],
     "headers": [
       {
-        "source": "/socketlab/**/*.pdf",
+        "source": "/**/*.pdf",
         "headers": [
           {
             "key": "Cache-Control",
@@ -20,12 +20,12 @@
     ],
     "rewrites": [
       {
-        "source": "/socketlab/implementations/(python|java|cpp|go|rust|dart)/**",
-        "destination": "/socketlab/implementations/$1/index.html"
+        "source": "/implementations/(python|java|cpp|go|rust|dart)/**",
+        "destination": "/implementations/$1/index.html"
       },
       {
-        "source": "/socketlab/**",
-        "destination": "/socketlab/index.html"
+        "source": "/**",
+        "destination": "/index.html"
       }
     ]
   }
