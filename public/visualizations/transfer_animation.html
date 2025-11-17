@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Transfer Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            min-width: 300px;
+        }
+        
+        .progress-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            min-width: 300px;
+        }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #3b82f6);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .file-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="control-panel">
+        <h3 class="text-xl font-bold mb-4">📤 Transfer Controls</h3>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">File Selection</label>
+            <select id="fileType" class="w-full p-2 rounded bg-white/10 border border-white/20 text-white">
+                <option value="document">📄 Document (PDF, DOC)</option>
+                <option value="image">🖼️ Image (JPG, PNG)</option>
+                <option value="video">🎥 Video (MP4, AVI)</option>
+                <option value="audio">🎵 Audio (MP3, WAV)</option>
+                <option value="archive">📦 Archive (ZIP, RAR)</option>
+                <option value="code">💻 Code (HTML, JS)</option>
+            </select>
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">File Size</label>
+            <select id="fileSize" class="w-full p-2 rounded bg-white/10 border border-white/20 text-white">
+                <option value="small">Small (1-10 MB)</option>
+                <option value="medium">Medium (10-50 MB)</option>
+                <option value="large">Large (50-200 MB)</option>
+                <option value="huge">Huge (200 MB+)</option>
+            </select>
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Connection Speed</label>
+            <select id="connectionSpeed" class="w-full p-2 rounded bg-white/10 border border-white/20 text-white">
+                <option value="slow">Slow (1 Mbps)</option>
+                <option value="medium">Medium (10 Mbps)</option>
+                <option value="fast">Fast (100 Mbps)</option>
+                <option value="ultra">Ultra (1 Gbps)</option>
+            </select>
+        </div>
+        
+        <button id="startTransfer" class="btn" onclick="startTransfer()">
+            🚀 Start Transfer
+        </button>
+        
+        <button id="pauseTransfer" class="btn" onclick="pauseTransfer()" disabled>
+            ⏸️ Pause Transfer
+        </button>
+        
+        <button id="cancelTransfer" class="btn" onclick="cancelTransfer()" disabled>
+            ❌ Cancel Transfer
+        </button>
+        
+        <div class="mt-4">
+            <label class="block text-sm font-medium mb-2">Animation Speed</label>
+            <input type="range" id="animSpeed" min="0.5" max="3" step="0.5" value="1" 
+                   onchange="setAnimationSpeed(this.value)" class="w-full">
+            <div class="text-xs opacity-75">Speed: <span id="speedValue">1x</span></div>
+        </div>
+    </div>
+    
+    <div class="progress-panel">
+        <h3 class="text-xl font-bold mb-4">📊 Transfer Progress</h3>
+        
+        <div class="file-info">
+            <div class="text-sm font-medium mb-2">Current File</div>
+            <div id="fileName" class="text-xs opacity-75">No file selected</div>
+            <div id="fileDetails" class="text-xs opacity-75">-</div>
+        </div>
+        
+        <div class="mb-4">
+            <div class="flex justify-between text-sm mb-1">
+                <span>Progress</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <div class="opacity-75">Speed</div>
+                <div id="currentSpeed" class="font-semibold">0 Mbps</div>
+            </div>
+            <div>
+                <div class="opacity-75">Time Left</div>
+                <div id="timeLeft" class="font-semibold">--:--</div>
+            </div>
+            <div>
+                <div class="opacity-75">Transferred</div>
+                <div id="bytesTransferred" class="font-semibold">0 MB</div>
+            </div>
+            <div>
+                <div class="opacity-75">Status</div>
+                <div id="transferStatus" class="font-semibold">Ready</div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <div class="text-sm font-medium mb-2">Transfer History</div>
+            <div id="transferHistory" class="space-y-1 text-xs opacity-75 max-h-32 overflow-y-auto">
+                <div>No transfers yet...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Transfer animation variables
+        let transferState = 'idle'; // idle, transferring, paused, completed, error
+        let transferProgress = 0;
+        let currentFileSize = 0;
+        let transferredBytes = 0;
+        let transferSpeed = 0;
+        let animationSpeed = 1;
+        let particles = [];
+        let dataPackets = [];
+        let transferHistory = [];
+        let currentFileName = '';
+        
+        // File type configurations
+        const fileTypes = {
+            document: { icon: '📄', color: [59, 130, 246], extensions: ['pdf', 'doc', 'docx', 'txt'] },
+            image: { icon: '🖼️', color: [236, 72, 153], extensions: ['jpg', 'jpeg', 'png', 'gif'] },
+            video: { icon: '🎥', color: [34, 197, 94], extensions: ['mp4', 'avi', 'mov', 'mkv'] },
+            audio: { icon: '🎵', color: [251, 146, 60], extensions: ['mp3', 'wav', 'flac', 'aac'] },
+            archive: { icon: '📦', color: [168, 85, 247], extensions: ['zip', 'rar', '7z', 'tar'] },
+            code: { icon: '💻', color: [14, 165, 233], extensions: ['html', 'js', 'css', 'py'] }
+        };
+        
+        const connectionSpeeds = {
+            slow: 1,      // 1 Mbps
+            medium: 10,   // 10 Mbps
+            fast: 100,    // 100 Mbps
+            ultra: 1000   // 1 Gbps
+        };
+        
+        // Particle class for visual effects
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = random(-2, 2);
+                this.vy = random(-2, 2);
+                this.life = 1;
+                this.color = color;
+                this.size = random(2, 6);
+            }
+            
+            update() {
+                this.x += this.vx * animationSpeed;
+                this.y += this.vy * animationSpeed;
+                this.life -= 0.02 * animationSpeed;
+                this.size *= 0.98;
+            }
+            
+            draw() {
+                push();
+                fill(this.color[0], this.color[1], this.color[2], this.life * 255);
+                noStroke();
+                circle(this.x, this.y, this.size);
+                pop();
+            }
+        }
+        
+        // Data packet class
+        class DataPacket {
+            constructor(startX, startY, endX, endY, color) {
+                this.startX = startX;
+                this.startY = startY;
+                this.endX = endX;
+                this.endY = endY;
+                this.x = startX;
+                this.y = startY;
+                this.color = color;
+                this.progress = 0;
+                this.size = random(4, 8);
+                this.speed = random(0.01, 0.02);
+            }
+            
+            update() {
+                this.progress += this.speed * animationSpeed;
+                if (this.progress >= 1) {
+                    return true; // Packet reached destination
+                }
+                
+                // Bezier curve for smooth movement
+                let t = this.progress;
+                let controlX = (this.startX + this.endX) / 2;
+                let controlY = min(this.startY, this.endY) - 100;
+                
+                this.x = (1-t)*(1-t)*this.startX + 2*(1-t)*t*controlX + t*t*this.endX;
+                this.y = (1-t)*(1-t)*this.startY + 2*(1-t)*t*controlY + t*t*this.endY;
+                
+                return false;
+            }
+            
+            draw() {
+                push();
+                fill(this.color[0], this.color[1], this.color[2], 200);
+                noStroke();
+                circle(this.x, this.y, this.size);
+                
+                // Trail effect
+                for (let i = 1; i <= 3; i++) {
+                    let trailProgress = max(0, this.progress - i * 0.02);
+                    if (trailProgress > 0) {
+                        let t = trailProgress;
+                        let controlX = (this.startX + this.endX) / 2;
+                        let controlY = min(this.startY, this.endY) - 100;
+                        
+                        let trailX = (1-t)*(1-t)*this.startX + 2*(1-t)*t*controlX + t*t*this.endX;
+                        let trailY = (1-t)*(1-t)*this.startY + 2*(1-t)*t*controlY + t*t*this.endY;
+                        
+                        fill(this.color[0], this.color[1], this.color[2], 200 / i);
+                        circle(trailX, trailY, this.size / i);
+                    }
+                }
+                pop();
+            }
+        }
+        
+        // Control functions
+        function startTransfer() {
+            const fileType = document.getElementById('fileType').value;
+            const fileSizeCategory = document.getElementById('fileSize').value;
+            const connectionSpeedType = document.getElementById('connectionSpeed').value;
+            
+            // Generate file details
+            const typeConfig = fileTypes[fileType];
+            const extension = typeConfig.extensions[Math.floor(random(typeConfig.extensions.length))];
+            const fileName = `document_${Date.now()}.${extension}`;
+            
+            // Calculate file size
+            let sizeMB;
+            switch(fileSizeCategory) {
+                case 'small': sizeMB = random(1, 10); break;
+                case 'medium': sizeMB = random(10, 50); break;
+                case 'large': sizeMB = random(50, 200); break;
+                case 'huge': sizeMB = random(200, 500); break;
+            }
+            
+            currentFileSize = sizeMB * 1024 * 1024; // Convert to bytes
+            transferSpeed = connectionSpeeds[connectionSpeedType] * 1024 * 1024 / 8; // Convert to bytes per second
+            currentFileName = `${typeConfig.icon} ${fileName}`;
+            
+            // Update UI
+            document.getElementById('fileName').textContent = currentFileName;
+            document.getElementById('fileDetails').textContent = `${sizeMB.toFixed(1)} MB • ${connectionSpeedType.toUpperCase()} connection`;
+            document.getElementById('startTransfer').disabled = true;
+            document.getElementById('pauseTransfer').disabled = false;
+            document.getElementById('cancelTransfer').disabled = false;
+            
+            // Start transfer
+            transferState = 'transferring';
+            transferProgress = 0;
+            transferredBytes = 0;
+            
+            addToHistory(`Started: ${currentFileName}`);
+        }
+        
+        function pauseTransfer() {
+            if (transferState === 'transferring') {
+                transferState = 'paused';
+                document.getElementById('pauseTransfer').textContent = '▶️ Resume Transfer';
+                addToHistory(`Paused: ${currentFileName}`);
+            } else if (transferState === 'paused') {
+                transferState = 'transferring';
+                document.getElementById('pauseTransfer').textContent = '⏸️ Pause Transfer';
+                addToHistory(`Resumed: ${currentFileName}`);
+            }
+        }
+        
+        function cancelTransfer() {
+            transferState = 'idle';
+            transferProgress = 0;
+            transferredBytes = 0;
+            dataPackets = [];
+            
+            document.getElementById('startTransfer').disabled = false;
+            document.getElementById('pauseTransfer').disabled = true;
+            document.getElementById('cancelTransfer').disabled = true;
+            document.getElementById('pauseTransfer').textContent = '⏸️ Pause Transfer';
+            
+            addToHistory(`Cancelled: ${currentFileName}`);
+        }
+        
+        function setAnimationSpeed(speed) {
+            animationSpeed = parseFloat(speed);
+            document.getElementById('speedValue').textContent = speed + 'x';
+        }
+        
+        function addToHistory(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            transferHistory.unshift(`[${timestamp}] ${message}`);
+            if (transferHistory.length > 10) {
+                transferHistory.pop();
+            }
+            
+            document.getElementById('transferHistory').innerHTML = 
+                transferHistory.map(entry => `<div>${entry}</div>`).join('');
+        }
+        
+        function updateProgress() {
+            if (transferState === 'transferring') {
+                // Update transfer progress
+                let bytesPerFrame = transferSpeed / 60; // Assuming 60 FPS
+                transferredBytes += bytesPerFrame * animationSpeed;
+                transferProgress = min(transferredBytes / currentFileSize, 1);
+                
+                // Create data packets
+                if (frameCount % 5 === 0 && transferProgress < 1) {
+                    let startX = width * 0.2;
+                    let startY = height * 0.5;
+                    let endX = width * 0.8;
+                    let endY = height * 0.5;
+                    
+                    const fileType = document.getElementById('fileType').value;
+                    const color = fileTypes[fileType].color;
+                    
+                    dataPackets.push(new DataPacket(startX, startY, endX, endY, color));
+                }
+                
+                // Create particles
+                if (frameCount % 3 === 0) {
+                    let x = random(width * 0.15, width * 0.25);
+                    let y = random(height * 0.45, height * 0.55);
+                    const fileType = document.getElementById('fileType').value;
+                    const color = fileTypes[fileType].color;
+                    particles.push(new Particle(x, y, color));
+                }
+                
+                // Check if transfer is complete
+                if (transferProgress >= 1) {
+                    transferState = 'completed';
+                    document.getElementById('startTransfer').disabled = false;
+                    document.getElementById('pauseTransfer').disabled = true;
+                    document.getElementById('cancelTransfer').disabled = true;
+                    addToHistory(`Completed: ${currentFileName}`);
+                }
+            }
+            
+            // Update UI
+            const percent = Math.floor(transferProgress * 100);
+            document.getElementById('progressPercent').textContent = percent + '%';
+            document.getElementById('progressFill').style.width = percent + '%';
+            
+            const speedMbps = (transferSpeed * 8 / 1024 / 1024).toFixed(2);
+            document.getElementById('currentSpeed').textContent = speedMbps + ' Mbps';
+            
+            const transferredMB = (transferredBytes / 1024 / 1024).toFixed(1);
+            document.getElementById('bytesTransferred').textContent = transferredMB + ' MB';
+            
+            if (transferState === 'transferring' && transferProgress > 0) {
+                const remainingBytes = currentFileSize - transferredBytes;
+                const remainingSeconds = remainingBytes / transferSpeed;
+                const minutes = Math.floor(remainingSeconds / 60);
+                const seconds = Math.floor(remainingSeconds % 60);
+                document.getElementById('timeLeft').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                document.getElementById('timeLeft').textContent = '--:--';
+            }
+            
+            const statusText = {
+                'idle': 'Ready',
+                'transferring': 'Transferring...',
+                'paused': 'Paused',
+                'completed': 'Completed',
+                'error': 'Error'
+            };
+            
+            document.getElementById('transferStatus').textContent = statusText[transferState] || 'Unknown';
+        }
+        
+        // P5.js setup
+        function setup() {
+            let canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('body');
+        }
+        
+        function draw() {
+            // Dark gradient background
+            for (let i = 0; i <= height; i++) {
+                let inter = map(i, 0, height, 0, 1);
+                let c = lerpColor(color(26, 26, 46), color(15, 52, 96), inter);
+                stroke(c);
+                line(0, i, width, i);
+            }
+            
+            // Update transfer progress
+            updateProgress();
+            
+            // Draw network nodes
+            drawNetworkNodes();
+            
+            // Update and draw data packets
+            dataPackets = dataPackets.filter(packet => {
+                const reached = packet.update();
+                if (!reached) {
+                    packet.draw();
+                    return true;
+                }
+                return false;
+            });
+            
+            // Update and draw particles
+            particles = particles.filter(particle => {
+                particle.update();
+                particle.draw();
+                return particle.life > 0;
+            });
+        }
+        
+        function drawNetworkNodes() {
+            // Sender node (left)
+            push();
+            let senderX = width * 0.2;
+            let senderY = height * 0.5;
+            
+            // Glow effect for active transfer
+            if (transferState === 'transferring') {
+                for (let i = 3; i > 0; i--) {
+                    fill(59, 130, 246, 20);
+                    noStroke();
+                    circle(senderX, senderY, 60 + i * 20 + sin(frameCount * 0.05) * 10);
+                }
+            }
+            
+            fill(59, 130, 246);
+            noStroke();
+            circle(senderX, senderY, 60);
+            
+            fill(255);
+            textAlign(CENTER, CENTER);
+            textSize(24);
+            text('📤', senderX, senderY - 5);
+            textSize(12);
+            text('Student A', senderX, senderY + 40);
+            pop();
+            
+            // Receiver node (right)
+            push();
+            let receiverX = width * 0.8;
+            let receiverY = height * 0.5;
+            
+            // Glow effect for active transfer
+            if (transferState === 'transferring') {
+                for (let i = 3; i > 0; i--) {
+                    fill(239, 68, 68, 20);
+                    noStroke();
+                    circle(receiverX, receiverY, 60 + i * 20 + sin(frameCount * 0.05) * 10);
+                }
+            }
+            
+            fill(239, 68, 68);
+            noStroke();
+            circle(receiverX, receiverY, 60);
+            
+            fill(255);
+            textAlign(CENTER, CENTER);
+            textSize(24);
+            text('📥', receiverX, receiverY - 5);
+            textSize(12);
+            text('Student B', receiverX, receiverY + 40);
+            pop();
+            
+            // Connection line
+            stroke(255, 50);
+            strokeWeight(2);
+            line(senderX, senderY, receiverX, receiverY);
+            
+            // Progress indicator on connection line
+            if (transferProgress > 0) {
+                stroke(59, 130, 246, 150);
+                strokeWeight(4);
+                let progressX = lerp(senderX, receiverX, transferProgress);
+                line(senderX, senderY, progressX, senderY);
+            }
+        }
+        
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+</body>
+</html>
