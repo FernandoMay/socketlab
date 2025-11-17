@@ -204,3 +204,9 @@ This project provides comprehensive learning in:
 6. **Read the report**: Comprehensive academic documentation
 
 This project represents a complete, production-ready solution for cross-computer file transfer with emphasis on educational value, modern development practices, and comprehensive documentation. Perfect for learning socket programming, network communication, and cross-platform software development! 🎓
+
+## Official Site 
+https://socketlab.web.app
+
+## GitHub Repository
+https://github.com/FernandoMay/socketlab
