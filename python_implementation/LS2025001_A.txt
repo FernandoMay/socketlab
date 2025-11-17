@@ -1,0 +1,16 @@
+Cross-Computer File Transfer Test File
+Student ID: LS2025001
+Created: 2025-11-17 07:16:06
+File Size: Test File for Socket Programming Lab 1
+
+This is a test file created for the Socket Programming Lab 1.
+It demonstrates cross-computer file transfer using sockets.
+
+Content lines for testing:
+1. First line of test content
+2. Second line with some numbers: 12345
+3. Third line with special characters: !@#$%^&*()
+4. Fourth line with unicode: ñáéíóú
+5. Fifth line: End of test file
+
+File integrity checksum will be calculated upon transfer.

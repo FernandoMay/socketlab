@@ -37,6 +37,10 @@ This implementation provides a comprehensive file transfer solution with a moder
 # No additional packages required - uses Python standard library
 python --version  # Python 3.7 or higher
 ```
+#### Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
 #### Running the Application
 ```bash

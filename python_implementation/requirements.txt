@@ -1,0 +1,8 @@
+fastapi==0.103.1
+uvicorn==0.23.2
+python-socketio==5.9.0
+python-engineio==4.5.1
+python-multipart==0.0.6
+aiofiles==23.2.1
+python-dotenv==1.0.0
+watchdog==3.0.0
