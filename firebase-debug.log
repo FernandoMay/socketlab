@@ -1,21 +1,74 @@
-[debug] [2025-11-17T16:15:21.333Z] ----------------------------------------------------------------------
-[debug] [2025-11-17T16:15:21.344Z] Command:       /opt/homebrew/Cellar/node/24.4.1/bin/node /usr/local/bin/firebase deploy --only hosting:socketlab
-[debug] [2025-11-17T16:15:21.344Z] CLI Version:   14.14.0
-[debug] [2025-11-17T16:15:21.344Z] Platform:      darwin
-[debug] [2025-11-17T16:15:21.344Z] Node Version:  v24.4.1
-[debug] [2025-11-17T16:15:21.344Z] Time:          Mon Nov 17 2025 10:15:21 GMT-0600 (Central Standard Time)
-[debug] [2025-11-17T16:15:21.344Z] ----------------------------------------------------------------------
+[debug] [2025-11-17T16:33:34.113Z] ----------------------------------------------------------------------
+[debug] [2025-11-17T16:33:34.119Z] Command:       /opt/homebrew/Cellar/node/24.4.1/bin/node /usr/local/bin/firebase deploy --only hosting:socketlab
+[debug] [2025-11-17T16:33:34.119Z] CLI Version:   14.14.0
+[debug] [2025-11-17T16:33:34.119Z] Platform:      darwin
+[debug] [2025-11-17T16:33:34.119Z] Node Version:  v24.4.1
+[debug] [2025-11-17T16:33:34.119Z] Time:          Mon Nov 17 2025 10:33:34 GMT-0600 (Central Standard Time)
+[debug] [2025-11-17T16:33:34.119Z] ----------------------------------------------------------------------
 [debug] 
-[debug] [2025-11-17T16:15:21.465Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
-[debug] [2025-11-17T16:15:21.465Z] > authorizing via signed-in user (fmay130@gmail.com)
-[debug] [2025-11-17T16:15:21.465Z] [iam] checking project fb111-bc461 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
-[debug] [2025-11-17T16:15:21.466Z] Checked if tokens are valid: true, expires at: 1763397962699
-[debug] [2025-11-17T16:15:21.466Z] Checked if tokens are valid: true, expires at: 1763397962699
-[debug] [2025-11-17T16:15:21.466Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions [none]
-[debug] [2025-11-17T16:15:21.466Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions x-goog-quota-user=projects/fb111-bc461
-[debug] [2025-11-17T16:15:21.466Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
-[debug] [2025-11-17T16:15:23.426Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions 200
-[debug] [2025-11-17T16:15:23.426Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
-[debug] [2025-11-17T16:15:23.427Z] Checked if tokens are valid: true, expires at: 1763397962699
-[debug] [2025-11-17T16:15:23.427Z] Checked if tokens are valid: true, expires at: 1763397962699
-[debug] [2025-11-17T16:15:23.427Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/fb111-bc461 [none]
+[debug] [2025-11-17T16:33:34.223Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-11-17T16:33:34.223Z] > authorizing via signed-in user (fmay130@gmail.com)
+[debug] [2025-11-17T16:33:34.223Z] [iam] checking project fb111-bc461 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-11-17T16:33:34.223Z] Checked if tokens are valid: false, expires at: 1763397962699
+[debug] [2025-11-17T16:33:34.223Z] Checked if tokens are valid: false, expires at: 1763397962699
+[debug] [2025-11-17T16:33:34.224Z] > refreshing access token with scopes: []
+[debug] [2025-11-17T16:33:34.225Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-11-17T16:33:34.225Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-11-17T16:33:35.435Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-11-17T16:33:35.435Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-11-17T16:33:35.452Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions [none]
+[debug] [2025-11-17T16:33:35.452Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions x-goog-quota-user=projects/fb111-bc461
+[debug] [2025-11-17T16:33:35.452Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-11-17T16:33:37.539Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions 200
+[debug] [2025-11-17T16:33:37.539Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/fb111-bc461:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-11-17T16:33:37.540Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:37.540Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:37.540Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/fb111-bc461 [none]
+[debug] [2025-11-17T16:33:39.074Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/fb111-bc461 200
+[debug] [2025-11-17T16:33:39.074Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/fb111-bc461 {"projectId":"fb111-bc461","projectNumber":"1085973434586","displayName":"fb111","name":"projects/fb111-bc461","resources":{"hostingSite":"fb111-bc461","realtimeDatabaseInstance":"fb111-bc461","locationId":"us-central"},"state":"ACTIVE","etag":"1_d24a2a28-525c-4bf6-902e-ba128e0ab1e1"}
+[info] 
+[info] === Deploying to 'fb111-bc461'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2025-11-17T16:33:39.082Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:39.082Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:39.082Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/socketlab/versions [none]
+[debug] [2025-11-17T16:33:39.082Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/socketlab/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2025-11-17T16:33:42.473Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/socketlab/versions 200
+[debug] [2025-11-17T16:33:42.474Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/socketlab/versions {"name":"projects/1085973434586/sites/socketlab/versions/9c07e0964a4f8fbc","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[info] i  hosting[socketlab]: beginning deploy... 
+[info] i  hosting[socketlab]: found 7 files in public 
+[debug] [2025-11-17T16:33:42.481Z] [hosting] uploading with 200 concurrency
+[debug] [2025-11-17T16:33:42.485Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:42.485Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:42.486Z] [hosting] hash cache [cHVibGlj] stored for 7 files
+[debug] [2025-11-17T16:33:42.486Z] [hosting][hash queue][FINAL] {"max":2,"min":0,"avg":0.2857142857142857,"active":0,"complete":7,"success":7,"errored":0,"retried":0,"total":7,"elapsed":3}
+[debug] [2025-11-17T16:33:42.486Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/1085973434586/sites/socketlab/versions/9c07e0964a4f8fbc:populateFiles [none]
+[debug] [2025-11-17T16:33:42.486Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/1085973434586/sites/socketlab/versions/9c07e0964a4f8fbc:populateFiles {"files":{"/robots.txt":"a9f80ec8139f358ccf245372fb028866625a4b0d19f44b3aadaeaa0ed1ff8e75","/logo.svg":"1f0e785de2789dfe198657280876e64299da30f20bdde8a6d378ce455e483900","/labreport1.pdf":"0a148c957f5d4132f05546a0ad1d6fd31910306c2e281e3790cf6442b89829d9","/final_report.tex":"33d6147773560454dde8fb5d60e4aa4ffb2164dcfa77c10701d18a5a2e8d82cb","/visualizations/transfer_animation.html":"9ee4dc760efd660693a51ec578c190b476c374496c8b4aafd2e0fbb158f53e09","/visualizations/network_topology.html":"c7af2c693479774ae7f9949c5df95e371ccfa80e1fdd7221bd48164346ddfb80","/index.html":"8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe"}}
+[debug] [2025-11-17T16:33:42.985Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/1085973434586/sites/socketlab/versions/9c07e0964a4f8fbc:populateFiles 200
+[debug] [2025-11-17T16:33:42.985Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/1085973434586/sites/socketlab/versions/9c07e0964a4f8fbc:populateFiles {"uploadRequiredHashes":["8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe"],"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files"}
+[debug] [2025-11-17T16:33:42.986Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:42.986Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:42.986Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe [none]
+[debug] [2025-11-17T16:33:42.986Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe [stream]
+[debug] [2025-11-17T16:33:42.988Z] [hosting][populate queue][FINAL] {"max":501,"min":501,"avg":501,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":503}
+[debug] [2025-11-17T16:33:42.988Z] [hosting] uploads queued: 1
+[debug] [2025-11-17T16:33:44.984Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe 400
+[debug] [2025-11-17T16:33:44.984Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe [stream]
+[debug] [2025-11-17T16:33:44.985Z] [hosting][upload] index.html (8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe) HTTP ERROR 400: headers={} Couldn't process request (status=400): content hash doesn't match content
+[debug] [2025-11-17T16:33:45.386Z] [uploadQueue] Retrying task 8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe
+[debug] [2025-11-17T16:33:45.386Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:45.386Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:45.387Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe [none]
+[debug] [2025-11-17T16:33:45.387Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe [stream]
+[debug] [2025-11-17T16:33:46.109Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe 400
+[debug] [2025-11-17T16:33:46.110Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe [stream]
+[debug] [2025-11-17T16:33:46.110Z] [hosting][upload] index.html (8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe) HTTP ERROR 400: headers={} Couldn't process request (status=400): content hash doesn't match content
+[debug] [2025-11-17T16:33:46.911Z] [uploadQueue] Retrying task 8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe
+[debug] [2025-11-17T16:33:46.912Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:46.912Z] Checked if tokens are valid: true, expires at: 1763400814435
+[debug] [2025-11-17T16:33:46.913Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe [none]
+[debug] [2025-11-17T16:33:46.913Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe [stream]
+[debug] [2025-11-17T16:33:47.636Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe 400
+[debug] [2025-11-17T16:33:47.636Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/socketlab/versions/9c07e0964a4f8fbc/files/8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe [stream]
+[debug] [2025-11-17T16:33:47.636Z] [hosting][upload] index.html (8aa4ef5dd9187e1a31e5887dbbb9999ca38ce3298daf90f0bcc251df787895fe) HTTP ERROR 400: headers={} Couldn't process request (status=400): content hash doesn't match content
