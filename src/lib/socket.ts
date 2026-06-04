@@ -1,29 +1,23 @@
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
+import { getMessages, addMessage, ChatMessage } from './store';
 
 export const setupSocket = (io: Server) => {
-  io.on('connection', (socket) => {
+  io.on('connection', (socket: Socket) => {
     console.log('Client connected:', socket.id);
-    
-    // Handle messages
-    socket.on('message', (msg: { text: string; senderId: string }) => {
-      // Echo: broadcast message only the client who send the message
-      socket.emit('message', {
-        text: `Echo: ${msg.text}`,
-        senderId: 'system',
-        timestamp: new Date().toISOString(),
-      });
+
+    // Send message history on connection
+    socket.emit('messages', getMessages());
+
+    // Listen for new messages
+    socket.on('message', (data: { from: string; text: string }) => {
+      if (!data?.from || !data?.text) return;
+      const msg = addMessage(data.from, data.text);
+      // Broadcast to ALL connected clients including sender
+      io.emit('message', msg);
     });
 
-    // Handle disconnect
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
-    });
-
-    // Send welcome message
-    socket.emit('message', {
-      text: 'Welcome to WebSocket Echo Server!',
-      senderId: 'system',
-      timestamp: new Date().toISOString(),
     });
   });
 };
