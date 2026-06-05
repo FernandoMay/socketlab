@@ -48,3 +48,5 @@ prompt
 
 server.lognode_modules/
 .next/
+
+# Netlify cache.netlify/
