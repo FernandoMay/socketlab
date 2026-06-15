@@ -50,3 +50,6 @@ server.lognode_modules/
 .next/
 
 # Netlify cache.netlify/
+
+# Local Netlify folder
+.netlify
